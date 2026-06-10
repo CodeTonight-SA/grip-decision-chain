@@ -4,17 +4,19 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GRIP — Decision Chain</title>
-<meta name="description" content="Every decision GRIP's AI shipped, in order. Each entry is a real commit; the prev-hash link makes any removal or reordering visible. Verify it yourself.">
+<meta name="description" content="Every decision GRIP's AI shipped, in order — the what, why, how and when of each one. Each entry is a real commit; the prev-hash link makes any removal or reordering visible. Verify it yourself.">
 <style>
   :root {
     --paper: #f4f3ee;
     --ink: #15192b;          /* navy — 13.8:1 on paper (AAA) */
     --muted: #4b5168;        /* 7.0:1 on paper (AAA)         */
+    --faint: #6b7186;        /* 4.9:1 on paper (AA)          */
     --line: #d9d6cc;
     --accent: #a64b0a;       /* copper — 5.1:1 on paper (AA) */
     --ok: #1d6b3f;           /* green — 5.3:1 on paper (AA)  */
     --bad: #b3261e;          /* red   — 5.4:1 on paper (AA)  */
     --card: #fbfaf6;
+    --chip: #eceae1;
     --mono: ui-monospace, "SF Mono", "IBM Plex Mono", "Cascadia Code", Menlo, monospace;
     --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
@@ -51,31 +53,66 @@
   ol.chain { list-style: none; margin: 0; padding: 0; }
   li.entry {
     position: relative; background: var(--card); border: 1px solid var(--line);
-    border-radius: 4px; padding: .9rem 1rem .95rem; margin: 0 0 .7rem;
+    border-radius: 6px; padding: 1rem 1.1rem 1.05rem; margin: 0 0 .85rem;
   }
-  li.entry .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem .7rem; margin-bottom: .35rem; }
-  .sha { font-family: var(--mono); font-size: .82rem; color: var(--accent); font-weight: 600; word-break: break-all; }
-  .ts  { font-family: var(--mono); font-size: .72rem; color: var(--muted); margin-left: auto; }
-  .subject { font-size: .96rem; color: var(--ink); margin: 0; overflow-wrap: anywhere; }
-  .link { font-family: var(--mono); font-size: .68rem; color: var(--muted); margin-top: .4rem; }
-  .link .arrow { color: var(--accent); }
+  /* The verified-link rail: a copper edge means this row's prev-hash matched. */
+  li.entry.linked { border-left: 3px solid var(--ok); }
+  li.entry.root   { border-left: 3px solid var(--accent); }
+  li.entry .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem .7rem; margin-bottom: .5rem; }
   .seq { font-family: var(--mono); font-size: .68rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: .05rem .5rem; }
+  .linkflag { font-family: var(--mono); font-size: .68rem; font-weight: 600; display: inline-flex; align-items: center; gap: .25rem; }
+  .linkflag.ok   { color: var(--ok); }
+  .linkflag.root { color: var(--accent); }
+  .ts  { font-family: var(--mono); font-size: .72rem; color: var(--faint); margin-left: auto; }
+
+  /* WHAT — the headline decision, the most prominent line on the card. */
+  .what { font-size: 1.04rem; font-weight: 600; color: var(--ink); margin: 0 0 .55rem; line-height: 1.4; overflow-wrap: anywhere; }
+  .subject-only { font-size: .98rem; color: var(--ink); margin: 0 0 .55rem; overflow-wrap: anywhere; }
+
+  /* WHY / HOW — labelled reasoning rows. */
+  .reason { display: grid; grid-template-columns: 3.2rem 1fr; gap: .15rem .7rem; margin: .35rem 0 0; }
+  .reason dt { font-family: var(--mono); font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); padding-top: .12rem; }
+  .reason dd { margin: 0; font-size: .9rem; color: var(--muted); overflow-wrap: anywhere; white-space: pre-wrap; }
+
+  .no-reasoning { font-size: .8rem; color: var(--faint); font-style: italic; margin: .15rem 0 0; }
+
+  /* SHA + prev-hash provenance footer of each card. */
+  .prov { display: flex; flex-wrap: wrap; gap: .15rem .9rem; margin-top: .7rem; padding-top: .55rem; border-top: 1px dashed var(--line); font-family: var(--mono); font-size: .68rem; color: var(--faint); }
+  .prov .sha { color: var(--accent); font-weight: 600; word-break: break-all; }
+  .prov .arrow { color: var(--faint); }
 
   section.explain { margin-top: 2.75rem; border-top: 1px solid var(--line); padding-top: 1.5rem; }
   section.explain h2 { font-size: 1.05rem; margin: 0 0 .6rem; }
   section.explain p { color: var(--muted); font-size: .92rem; max-width: 46rem; }
+  section.explain code { font-family: var(--mono); font-size: .85em; background: var(--chip); padding: .05rem .3rem; border-radius: 3px; }
   pre {
     background: var(--ink); color: #e8e6df; font-family: var(--mono); font-size: .78rem;
     line-height: 1.5; padding: 1rem 1.1rem; border-radius: 5px; overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+  pre code { background: none; padding: 0; }
   pre .c { color: #9aa3b8; }
   a.repo { color: var(--accent); text-decoration: none; border-bottom: 1px solid currentColor; }
   a.repo:hover { color: var(--ink); }
   footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--line); font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+  footer a { color: var(--accent); }
   .err { color: var(--bad); font-family: var(--mono); font-size: .85rem; }
-  @media (max-width: 460px) {
+
+  /* Mobile-first: stack the timestamp + collapse the reason grid on narrow screens. */
+  @media (max-width: 480px) {
+    body { padding-left: 1rem; padding-right: 1rem; }
     .ts { margin-left: 0; width: 100%; }
+    .reason { grid-template-columns: 1fr; gap: 0 0; }
+    .reason dt { padding-top: .45rem; }
+  }
+  /* 44px touch targets for the only interactive elements (links). */
+  a { min-height: 44px; }
+  a.repo, footer a, section.explain a { display: inline; min-height: 0; }
+  @media (hover: none) {
+    a.repo, footer a { padding: .15rem 0; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    li.entry { transition: border-color .15s ease; }
   }
 </style>
 </head>
@@ -84,9 +121,10 @@
   <header>
     <p class="eyebrow">GRIP · order-evident decision chain</p>
     <h1>The AI's decisions, in order.</h1>
-    <p class="lede">Every entry below is a <b>real commit</b> GRIP shipped to its own codebase. Each one carries the
-      hash of the entry before it — so removing or reordering any decision <b>breaks the chain visibly</b>. The check
-      runs in your browser on load. You don't have to trust this page; <b>verify it yourself</b>.</p>
+    <p class="lede">Every card below is a <b>real decision</b> GRIP's AI shipped to its own codebase — and now carries the
+      <b>what, why, how and when</b> behind it. Each one holds the hash of the decision before it, so removing or reordering
+      any entry <b>breaks the chain visibly</b>. The check runs in your browser on load. You don't have to trust this page;
+      <b>verify it yourself</b>.</p>
   </header>
 
   <div id="verdict" class="verdict" role="status" aria-live="polite">
@@ -99,22 +137,28 @@
   <ol class="chain" id="chain" aria-label="GRIP decision chain, newest first"></ol>
 
   <section class="explain">
-    <h2>What this proves — and what it doesn't</h2>
-    <p>This is an <b>order-evident hash chain</b>. Each row is <code>{sha, subject, ts, prev_sha}</code> — only the
-      commit hash, its one-line subject, its timestamp, and a pointer to the previous commit. No code, no diffs, no
-      file paths, no client data: an allowlist by construction. Because <code>prev_sha</code> links every row to the
-      one before it, deleting or reordering an entry leaves a visible gap. It proves <b>order integrity and
-      append-history</b>. It is <i>not</i> an independent cryptographic signature, and (while GRIP's source stays
-      private) it does not let an outsider confirm each hash against the repository — it lets you confirm the chain is
-      internally consistent and unbroken.</p>
+    <h2>What a card shows</h2>
+    <p>Newer decisions carry four plain-English fields derived honestly from the commit itself — <b>what</b> changed (the
+      decision in one sentence), <b>why</b> (the rationale, from the commit message), <b>how</b> (the loop or method that
+      produced it), and <b>when</b> (the moment it shipped). Decisions recorded before these fields existed show only their
+      one-line subject, labelled plainly — never hidden, never faked.</p>
+
+    <h2 style="margin-top:1.5rem">What this proves — and what it doesn't</h2>
+    <p>This is an <b>order-evident hash chain</b>. Each row is <code>{sha, subject, ts, prev_sha}</code> plus the optional
+      <code>what/why/how/when</code> reasoning — only the commit hash, its subject, its timestamp, a pointer to the previous
+      commit, and plain-language reasoning. No code, no diffs, no file paths, no client data: an allowlist by construction.
+      Because <code>prev_sha</code> links every row to the one before it, deleting or reordering an entry leaves a visible
+      gap. It proves <b>order integrity and append-history</b>. It is <i>not</i> an independent cryptographic signature, and
+      (while GRIP's source stays private) it does not let an outsider confirm each hash against the repository — it lets you
+      confirm the chain is internally consistent and unbroken.</p>
 
     <h2 style="margin-top:1.5rem">Verify it yourself</h2>
     <p>The same check this page ran, as a standalone script. Save the chain and run it — no dependencies:</p>
-<pre><span class="c"># fetch the chain + the verifier, then run it</span>
+<pre><code><span class="c"># fetch the chain + the verifier, then run it</span>
 curl -sO https://codetonight-sa.github.io/grip-decision-chain/idr-public.jsonl
 curl -sO https://codetonight-sa.github.io/grip-decision-chain/verify.js
 node verify.js idr-public.jsonl
-<span class="c"># → chain OK · 45 entries   (exit 0)   |   chain BROKEN at entry N  (exit 1)</span></pre>
+<span class="c"># → chain OK · N entries   (exit 0)   |   chain BROKEN at entry N  (exit 1)</span></code></pre>
     <p>Or paste <a class="repo" href="verify.js">verify.js</a> into your browser console on this page — it reads the
       already-loaded chain and prints the same verdict.</p>
   </section>
@@ -139,11 +183,32 @@ function verifyChain(rows) {
 function fmtTs(iso) {
   try {
     const d = new Date(iso);
+    if (isNaN(d)) return iso;
     return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit',
       hour: '2-digit', minute: '2-digit' }) + ' ' + (iso.slice(-6));
   } catch { return iso; }
 }
-function esc(s) { return s.replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+// A reasoning field counts as present only if it is a non-empty string — so a
+// blank or missing what/why/how/when falls back gracefully, never renders empty.
+function has(v) { return typeof v === 'string' && v.trim().length > 0; }
+
+function reasoningHtml(r) {
+  // New-shape card: surface what/why/how prominently; when is shown as the ts.
+  const what = has(r.what) ? '<p class="what">' + esc(r.what) + '</p>'
+                           : '<p class="what">' + esc(r.subject) + '</p>';
+  let rows = '';
+  if (has(r.why))  rows += '<dt>Why</dt><dd>' + esc(r.why) + '</dd>';
+  if (has(r.how))  rows += '<dt>How</dt><dd>' + esc(r.how) + '</dd>';
+  const reason = rows ? '<dl class="reason">' + rows + '</dl>' : '';
+  return what + reason;
+}
+function legacyHtml(r) {
+  // Old-shape card: only the subject exists. Show it, labelled honestly —
+  // recorded before the reasoning fields existed. Never blank, never faked.
+  return '<p class="subject-only">' + esc(r.subject) + '</p>' +
+    '<p class="no-reasoning">Recorded before reasoning fields existed — subject only.</p>';
+}
 
 (async function () {
   const verdictEl = document.getElementById('verdict');
@@ -160,6 +225,11 @@ function esc(s) { return s.replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>'
     verdictEl.innerHTML = '<span class="badge">UNAVAILABLE</span><span class="detail">could not load the chain: ' + esc(String(e.message || e)) + '</span>';
     return;
   }
+  if (!rows.length) {
+    verdictEl.className = 'verdict';
+    verdictEl.innerHTML = '<span class="badge">EMPTY</span><span class="detail">no decisions recorded yet</span>';
+    return;
+  }
   // Expose for the console-paste verify path.
   window.GRIP_CHAIN = rows;
 
@@ -167,31 +237,53 @@ function esc(s) { return s.replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>'
   if (result.valid) {
     verdictEl.className = 'verdict ok';
     verdictEl.innerHTML = '<span class="badge">✓ CHAIN VERIFIED</span>' +
-      '<span class="detail">' + rows.length + ' entries · every prev‑hash links · nothing removed or reordered</span>';
+      '<span class="detail">' + rows.length + ' decisions · every prev‑hash links · nothing removed or reordered</span>';
   } else {
     verdictEl.className = 'verdict bad';
     verdictEl.innerHTML = '<span class="badge">✗ CHAIN BROKEN</span>' +
       '<span class="detail">break at entry ' + (result.brokeAt + 1) + ' — prev‑hash does not match the prior commit</span>';
   }
 
+  const reasoned = rows.filter(r => has(r.what) || has(r.why) || has(r.how)).length;
   const first = rows[0], last = rows[rows.length - 1];
   metaEl.innerHTML =
-    '<span>entries <b>' + rows.length + '</b></span>' +
+    '<span>decisions <b>' + rows.length + '</b></span>' +
+    '<span>with reasoning <b>' + reasoned + '</b></span>' +
     '<span>root <b>' + esc(first.sha.slice(0, 10)) + '</b></span>' +
     '<span>head <b>' + esc(last.sha.slice(0, 10)) + '</b></span>' +
     '<span>since <b>' + esc(first.ts.slice(0, 10)) + '</b></span>';
 
+  // Per-row link integrity: a row is "linked" iff its prev_sha equals the prior
+  // row's sha (root for the first). This drives the verified-link rail per card.
+  const linkOk = rows.map((r, i) =>
+    i === 0 ? (r.prev_sha ?? null) === null : r.prev_sha === rows[i - 1].sha);
+
   // Newest decision first (most recent at top); the chain reads root→head internally.
   const html = rows.slice().reverse().map((r, idx) => {
-    const seq = rows.length - idx;
-    const prev = r.prev_sha
-      ? '<div class="link"><span class="arrow">↑</span> prev ' + esc(r.prev_sha.slice(0, 12)) + '</div>'
-      : '<div class="link"><span class="arrow">◆</span> chain root (no predecessor)</div>';
-    return '<li class="entry">' +
-      '<div class="top"><span class="seq">#' + seq + '</span>' +
-      '<span class="sha" title="' + esc(r.sha) + '">' + esc(r.sha.slice(0, 12)) + '</span>' +
-      '<span class="ts">' + esc(fmtTs(r.ts)) + '</span></div>' +
-      '<p class="subject">' + esc(r.subject) + '</p>' + prev + '</li>';
+    const i = rows.length - 1 - idx;          // original index
+    const seq = i + 1;
+    const isRoot = i === 0;
+    const ok = linkOk[i];
+    const cls = isRoot ? 'entry root' : (ok ? 'entry linked' : 'entry');
+    const flag = isRoot
+      ? '<span class="linkflag root">◆ chain root</span>'
+      : (ok ? '<span class="linkflag ok">✓ prev‑hash links</span>'
+            : '<span class="linkflag" style="color:var(--bad)">✗ link broken</span>');
+    const body = (has(r.what) || has(r.why) || has(r.how)) ? reasoningHtml(r) : legacyHtml(r);
+    const prevLine = r.prev_sha
+      ? '<span><span class="arrow">↑</span> prev ' + esc(r.prev_sha.slice(0, 12)) + '</span>'
+      : '<span><span class="arrow">◆</span> no predecessor</span>';
+    return '<li class="' + cls + '">' +
+      '<div class="top">' +
+        '<span class="seq">#' + seq + '</span>' + flag +
+        '<span class="ts">' + esc(fmtTs(r.ts)) + '</span>' +
+      '</div>' +
+      body +
+      '<div class="prov">' +
+        '<span class="sha" title="' + esc(r.sha) + '">' + esc(r.sha.slice(0, 12)) + '</span>' +
+        prevLine +
+      '</div>' +
+    '</li>';
   }).join('');
   chainEl.innerHTML = html;
 })();

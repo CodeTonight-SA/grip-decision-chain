@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GRIP — Decision Chain</title>
+<meta name="description" content="Every decision GRIP's AI shipped, in order. Each entry is a real commit; the prev-hash link makes any removal or reordering visible. Verify it yourself.">
+<style>
+  :root {
+    --paper: #f4f3ee;
+    --ink: #15192b;          /* navy — 13.8:1 on paper (AAA) */
+    --muted: #4b5168;        /* 7.0:1 on paper (AAA)         */
+    --line: #d9d6cc;
+    --accent: #a64b0a;       /* copper — 5.1:1 on paper (AA) */
+    --ok: #1d6b3f;           /* green — 5.3:1 on paper (AA)  */
+    --bad: #b3261e;          /* red   — 5.4:1 on paper (AA)  */
+    --card: #fbfaf6;
+    --mono: ui-monospace, "SF Mono", "IBM Plex Mono", "Cascadia Code", Menlo, monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); line-height: 1.55;
+    font-size: 16px;
+    padding: max(env(safe-area-inset-top), 1.5rem) 1.25rem 4rem;
+  }
+  .wrap { max-width: 56rem; margin: 0 auto; }
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }
+  .eyebrow { font-family: var(--mono); font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); margin: 0 0 .4rem; }
+  h1 { font-size: clamp(1.7rem, 5vw, 2.6rem); margin: 0 0 .5rem; letter-spacing: -.02em; font-weight: 650; }
+  .lede { color: var(--muted); font-size: 1.02rem; max-width: 44rem; margin: 0; }
+  .lede b { color: var(--ink); font-weight: 600; }
+
+  .verdict {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem 1rem;
+    margin: 1.5rem 0; padding: 1rem 1.15rem; border: 1px solid var(--line);
+    border-left: 4px solid var(--muted); background: var(--card); border-radius: 3px;
+  }
+  .verdict.ok  { border-left-color: var(--ok); }
+  .verdict.bad { border-left-color: var(--bad); }
+  .verdict .badge { font-family: var(--mono); font-weight: 700; font-size: 1rem; letter-spacing: .02em; }
+  .verdict.ok  .badge { color: var(--ok); }
+  .verdict.bad .badge { color: var(--bad); }
+  .verdict .detail { font-family: var(--mono); font-size: .82rem; color: var(--muted); }
+
+  .meta-row { display: flex; flex-wrap: wrap; gap: .4rem 1.5rem; font-family: var(--mono); font-size: .78rem; color: var(--muted); margin: -.5rem 0 1.75rem; }
+  .meta-row b { color: var(--ink); font-weight: 600; }
+
+  ol.chain { list-style: none; margin: 0; padding: 0; }
+  li.entry {
+    position: relative; background: var(--card); border: 1px solid var(--line);
+    border-radius: 4px; padding: .9rem 1rem .95rem; margin: 0 0 .7rem;
+  }
+  li.entry .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem .7rem; margin-bottom: .35rem; }
+  .sha { font-family: var(--mono); font-size: .82rem; color: var(--accent); font-weight: 600; word-break: break-all; }
+  .ts  { font-family: var(--mono); font-size: .72rem; color: var(--muted); margin-left: auto; }
+  .subject { font-size: .96rem; color: var(--ink); margin: 0; overflow-wrap: anywhere; }
+  .link { font-family: var(--mono); font-size: .68rem; color: var(--muted); margin-top: .4rem; }
+  .link .arrow { color: var(--accent); }
+  .seq { font-family: var(--mono); font-size: .68rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: .05rem .5rem; }
+
+  section.explain { margin-top: 2.75rem; border-top: 1px solid var(--line); padding-top: 1.5rem; }
+  section.explain h2 { font-size: 1.05rem; margin: 0 0 .6rem; }
+  section.explain p { color: var(--muted); font-size: .92rem; max-width: 46rem; }
+  pre {
+    background: var(--ink); color: #e8e6df; font-family: var(--mono); font-size: .78rem;
+    line-height: 1.5; padding: 1rem 1.1rem; border-radius: 5px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  pre .c { color: #9aa3b8; }
+  a.repo { color: var(--accent); text-decoration: none; border-bottom: 1px solid currentColor; }
+  a.repo:hover { color: var(--ink); }
+  footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--line); font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+  .err { color: var(--bad); font-family: var(--mono); font-size: .85rem; }
+  @media (max-width: 460px) {
+    .ts { margin-left: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">GRIP · order-evident decision chain</p>
+    <h1>The AI's decisions, in order.</h1>
+    <p class="lede">Every entry below is a <b>real commit</b> GRIP shipped to its own codebase. Each one carries the
+      hash of the entry before it — so removing or reordering any decision <b>breaks the chain visibly</b>. The check
+      runs in your browser on load. You don't have to trust this page; <b>verify it yourself</b>.</p>
+  </header>
+
+  <div id="verdict" class="verdict" role="status" aria-live="polite">
+    <span class="badge">CHECKING…</span>
+    <span class="detail">running the chain integrity check</span>
+  </div>
+
+  <div class="meta-row" id="meta"></div>
+
+  <ol class="chain" id="chain" aria-label="GRIP decision chain, newest first"></ol>
+
+  <section class="explain">
+    <h2>What this proves — and what it doesn't</h2>
+    <p>This is an <b>order-evident hash chain</b>. Each row is <code>{sha, subject, ts, prev_sha}</code> — only the
+      commit hash, its one-line subject, its timestamp, and a pointer to the previous commit. No code, no diffs, no
+      file paths, no client data: an allowlist by construction. Because <code>prev_sha</code> links every row to the
+      one before it, deleting or reordering an entry leaves a visible gap. It proves <b>order integrity and
+      append-history</b>. It is <i>not</i> an independent cryptographic signature, and (while GRIP's source stays
+      private) it does not let an outsider confirm each hash against the repository — it lets you confirm the chain is
+      internally consistent and unbroken.</p>
+
+    <h2 style="margin-top:1.5rem">Verify it yourself</h2>
+    <p>The same check this page ran, as a standalone script. Save the chain and run it — no dependencies:</p>
+<pre><span class="c"># fetch the chain + the verifier, then run it</span>
+curl -sO https://codetonight-sa.github.io/grip-decision-chain/idr-public.jsonl
+curl -sO https://codetonight-sa.github.io/grip-decision-chain/verify.js
+node verify.js idr-public.jsonl
+<span class="c"># → chain OK · 45 entries   (exit 0)   |   chain BROKEN at entry N  (exit 1)</span></pre>
+    <p>Or paste <a class="repo" href="verify.js">verify.js</a> into your browser console on this page — it reads the
+      already-loaded chain and prints the same verdict.</p>
+  </section>
+
+  <footer>
+    GRIP — General Reasoning &amp; Intelligence Platform · decision chain emitted by
+    <code>idr_public_emitter</code> · source <a class="repo" href="https://github.com/CodeTonight-SA/grip-decision-chain">CodeTonight-SA/grip-decision-chain</a>
+  </footer>
+</div>
+
+<script>
+// Client-side mirror of lib/idr_public_emitter.verify_chain — first row prev_sha
+// must be null; every later row's prev_sha must equal the prior row's sha.
+function verifyChain(rows) {
+  let prev = null;
+  for (let i = 0; i < rows.length; i++) {
+    if ((rows[i].prev_sha ?? null) !== prev) return { valid: false, brokeAt: i };
+    prev = rows[i].sha;
+  }
+  return { valid: true, brokeAt: -1 };
+}
+function fmtTs(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit',
+      hour: '2-digit', minute: '2-digit' }) + ' ' + (iso.slice(-6));
+  } catch { return iso; }
+}
+function esc(s) { return s.replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+
+(async function () {
+  const verdictEl = document.getElementById('verdict');
+  const chainEl = document.getElementById('chain');
+  const metaEl = document.getElementById('meta');
+  let rows;
+  try {
+    const res = await fetch('idr-public.jsonl', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    rows = text.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+  } catch (e) {
+    verdictEl.className = 'verdict bad';
+    verdictEl.innerHTML = '<span class="badge">UNAVAILABLE</span><span class="detail">could not load the chain: ' + esc(String(e.message || e)) + '</span>';
+    return;
+  }
+  // Expose for the console-paste verify path.
+  window.GRIP_CHAIN = rows;
+
+  const result = verifyChain(rows);
+  if (result.valid) {
+    verdictEl.className = 'verdict ok';
+    verdictEl.innerHTML = '<span class="badge">✓ CHAIN VERIFIED</span>' +
+      '<span class="detail">' + rows.length + ' entries · every prev‑hash links · nothing removed or reordered</span>';
+  } else {
+    verdictEl.className = 'verdict bad';
+    verdictEl.innerHTML = '<span class="badge">✗ CHAIN BROKEN</span>' +
+      '<span class="detail">break at entry ' + (result.brokeAt + 1) + ' — prev‑hash does not match the prior commit</span>';
+  }
+
+  const first = rows[0], last = rows[rows.length - 1];
+  metaEl.innerHTML =
+    '<span>entries <b>' + rows.length + '</b></span>' +
+    '<span>root <b>' + esc(first.sha.slice(0, 10)) + '</b></span>' +
+    '<span>head <b>' + esc(last.sha.slice(0, 10)) + '</b></span>' +
+    '<span>since <b>' + esc(first.ts.slice(0, 10)) + '</b></span>';
+
+  // Newest decision first (most recent at top); the chain reads root→head internally.
+  const html = rows.slice().reverse().map((r, idx) => {
+    const seq = rows.length - idx;
+    const prev = r.prev_sha
+      ? '<div class="link"><span class="arrow">↑</span> prev ' + esc(r.prev_sha.slice(0, 12)) + '</div>'
+      : '<div class="link"><span class="arrow">◆</span> chain root (no predecessor)</div>';
+    return '<li class="entry">' +
+      '<div class="top"><span class="seq">#' + seq + '</span>' +
+      '<span class="sha" title="' + esc(r.sha) + '">' + esc(r.sha.slice(0, 12)) + '</span>' +
+      '<span class="ts">' + esc(fmtTs(r.ts)) + '</span></div>' +
+      '<p class="subject">' + esc(r.subject) + '</p>' + prev + '</li>';
+  }).join('');
+  chainEl.innerHTML = html;
+})();
+</script>
+</body>
+</html>

@@ -119,12 +119,13 @@
 <body>
 <div class="wrap">
   <header>
-    <p class="eyebrow">GRIP · order-evident decision chain</p>
+    <p class="eyebrow">GRIP · order-evident decision chain · HAPPI/1.3</p>
     <h1>The AI's decisions, in order.</h1>
     <p class="lede">Every card below is a <b>real decision</b> GRIP's AI shipped to its own codebase — and now carries the
       <b>what, why, how and when</b> behind it. Each one holds the hash of the decision before it, so removing or reordering
       any entry <b>breaks the chain visibly</b>. The check runs in your browser on load. You don't have to trust this page;
       <b>verify it yourself</b>.</p>
+    <p class="lede" style="margin-top:.65rem;font-size:.92rem">This is the public face of GRIP's <b>IDR decision record</b> — the order-evident leg of a three-part cryptographic causation system: IDR decision record · signed memory chain · deterministic citation provenance. Full signing, Merkle inclusion proofs, and in-browser witness are on the <a class="repo" href="https://happiverse.grip-web.com">happiverse proof surface</a> (HAPPI/1.3).</p>
   </header>
 
   <div id="verdict" class="verdict" role="status" aria-live="polite">
@@ -151,6 +152,11 @@
       gap. It proves <b>order integrity and append-history</b>. It is <i>not</i> an independent cryptographic signature, and
       (while GRIP's source stays private) it does not let an outsider confirm each hash against the repository — it lets you
       confirm the chain is internally consistent and unbroken.</p>
+    <p>This page is the order-evident public face of GRIP's IDR decision record — one of three legs of its cryptographic
+      causation system (IDR decision record / signed memory chain / <code>cite.verify</code> citation provenance), all
+      conformant with the HAPPI/1.3 protocol. For signed, Merkle-rooted, in-browser-verifiable entries, see the
+      <a class="repo" href="https://happiverse.grip-web.com">happiverse proof surface</a>: that surface answers
+      "is the signature valid?"; this page answers "did the order change?"</p>
 
     <h2 style="margin-top:1.5rem">Verify it yourself</h2>
     <p>The same check this page ran, as a standalone script. Save the chain and run it — no dependencies:</p>

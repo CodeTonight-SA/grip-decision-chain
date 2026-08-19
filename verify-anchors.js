@@ -19,37 +19,48 @@
 //   mkdir -p anchors && curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/state.json
 //   node verify-anchors.js idr-public.jsonl anchors
 //
-//   # -> chain OK · anchors OK      (exit 0)
-//   # -> chain BROKEN / anchor FAIL (exit 1)
+//   # -> chain OK · anchors OK       (exit 0)
+//   # -> chain BROKEN / anchor FAIL  (exit 1)
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+async function main() {
+  // Dual-mode loader: works as CommonJS AND as an ES module, so a stray
+  // package.json with "type": "module" in the working directory can never
+  // silently neuter the verifier.
+  let fs, path, crypto;
+  if (typeof require === 'function') {
+    fs = require('fs'); path = require('path'); crypto = require('crypto');
+  } else {
+    fs = await import('node:fs');
+    path = await import('node:path');
+    crypto = await import('node:crypto');
+  }
 
-function leafHash(buf) {
-  return crypto.createHash('sha256')
-    .update(Buffer.concat([Buffer.from([0x00]), buf])).digest();
-}
-function nodeHash(left, right) {
-  return crypto.createHash('sha256')
-    .update(Buffer.concat([Buffer.from([0x01]), left, right])).digest();
-}
-// RFC 6962 Merkle Tree Hash — same construction scripts/anchor.py uses.
-function mth(leaves) {
-  const n = leaves.length;
-  if (n === 0) return crypto.createHash('sha256').digest();
-  if (n === 1) return leafHash(leaves[0]);
-  let k = 1;
-  while (k < n) k <<= 1;
-  k >>= 1;
-  return nodeHash(mth(leaves.slice(0, k)), mth(leaves.slice(k)));
-}
-function merkleRootHex(lines) {
-  return mth(lines.map((l) => Buffer.from(l, 'utf8'))).toString('hex');
-}
+  function leafHash(buf) {
+    return crypto.createHash('sha256')
+      .update(Buffer.concat([Buffer.from([0x00]), buf])).digest();
+  }
+  function nodeHash(left, right) {
+    return crypto.createHash('sha256')
+      .update(Buffer.concat([Buffer.from([0x01]), left, right])).digest();
+  }
+  // RFC 6962 Merkle Tree Hash — same construction scripts/anchor.py uses.
+  function mth(leaves) {
+    const n = leaves.length;
+    if (n === 0) return crypto.createHash('sha256').digest();
+    if (n === 1) return leafHash(leaves[0]);
+    let k = 1;
+    while (k < n) k <<= 1;
+    k >>= 1;
+    return nodeHash(mth(leaves.slice(0, k)), mth(leaves.slice(k)));
+  }
+  function merkleRootHex(lines) {
+    return mth(lines.map((l) => Buffer.from(l, 'utf8'))).toString('hex');
+  }
+  function rootShort(root) {
+    return root.slice(0, 12) + '…' + root.slice(-8);
+  }
 
-function main() {
   const chainPath = process.argv[2] || 'idr-public.jsonl';
   const anchorsDir = process.argv[3] || 'anchors';
   const statePath = path.join(anchorsDir, 'state.json');
@@ -111,8 +122,7 @@ function main() {
         + recomputed);
       continue;
     }
-    const manifestPath = path.join(anchorsDir,
-      path.basename(anchor.manifest || ''));
+    const manifestPath = path.join(anchorsDir, path.basename(anchor.manifest || ''));
     const proofPath = path.join(anchorsDir, path.basename(anchor.proof || ''));
     const manifestOk = fs.existsSync(manifestPath);
     const proofOk = fs.existsSync(proofPath);
@@ -133,8 +143,7 @@ function main() {
     if (manifest.canonical_merkle_root_rfc6962 !== declared) {
       bad++;
       console.error('anchor FAIL rows=1..' + k + ': manifest root field '
-        + manifest.canonical_merkle_root_rfc6962 + ' != state root '
-        + declared);
+        + manifest.canonical_merkle_root_rfc6962 + ' != state root ' + declared);
       continue;
     }
     const suffix = anchor.status === 'confirmed'
@@ -153,8 +162,7 @@ function main() {
     + 'node-free with: ots info PROOF');
 }
 
-function rootShort(root) {
-  return root.slice(0, 12) + '…' + root.slice(-8);
-}
-
-main();
+main().catch((e) => {
+  console.error('verify-anchors FAIL: ' + (e && e.message ? e.message : e));
+  process.exit(1);
+});

@@ -516,9 +516,14 @@ def upgrade() -> int:
         print(f"upgrade: rows={anchor['rows']} CONFIRMED in Bitcoin block "
               f"{confirmed['block']} ({confirmed['block_time_utc']}) via "
               f"{len(confirmed['sources'])} agreeing header sources")
+    # latest.json only needs rewriting when the anchor state actually moved
+    # (or the file is somehow missing) — otherwise every scheduled run would
+    # churn a commit whose only delta is generated_at.
     if changed:
         write_state(state)
-    write_latest(state, total)
+        write_latest(state, total)
+    elif not LATEST_FILE.exists():
+        write_latest(state, total)
     return 0
 
 

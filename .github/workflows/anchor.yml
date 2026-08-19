@@ -1,0 +1,66 @@
+name: anchor
+
+# Continuous Bitcoin anchoring for the public decision chain.
+#
+# - every 30 minutes (offset from the 15-minute chain sync), on every chain
+#   sync push, and on demand: stamp a new cumulative batch when eligible,
+#   upgrade pending proofs, confirm Bitcoin attestations against two
+#   independent block explorers, and commit the artifacts back to the branch
+#   that GitHub Pages serves.
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  push:
+    branches: [main]
+    paths:
+      - "idr-public.jsonl"
+      - "anchors/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: anchor
+  cancel-in-progress: false
+
+jobs:
+  anchor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install OpenTimestamps client
+        run: python -m pip install --upgrade pip opentimestamps-client
+
+      - name: Verify chain + anchor arithmetic
+        run: python3 scripts/anchor.py check
+
+      - name: Stamp newest eligible batch
+        run: python3 scripts/anchor.py stamp --min-new 25 --max-age-hours 24
+
+      - name: Upgrade pending proofs to Bitcoin
+        run: python3 scripts/anchor.py upgrade
+
+      - name: Commit and push anchor artifacts
+        run: |
+          git config user.name "GRIP Chain Anchor"
+          git config user.email "grip@codetonight.co.za"
+          git add anchors/
+          if git diff --cached --quiet; then
+            echo "no anchor changes"
+            exit 0
+          fi
+          git commit -m "anchor: pipeline update"
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main && git push origin main && exit 0
+            echo "push attempt $attempt failed — retrying"
+            sleep 20
+          done
+          exit 1

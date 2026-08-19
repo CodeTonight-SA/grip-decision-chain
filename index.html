@@ -139,9 +139,9 @@
     <span class="detail">running the chain integrity check</span>
   </div>
 
-  <div class="anchor" role="note">
+  <div class="anchor" id="anchor-panel" role="note">
     <span class="badge">⛓ BITCOIN-ANCHORED</span>
-    <span class="detail">The chain's Merkle root <code>0bba0792…a7f1bcb4</code> is committed to Bitcoin. Latest confirmed attestation: <b>block 956992</b> (2026-07-07), over the first <b>501</b> decisions; newer entries anchor in the next batch. Verify it node-free — no trust in this page required — with the OpenTimestamps client: <code>ots info &lt;proof&gt;</code>.</span>
+    <span class="detail" id="anchor-detail">The chain's Merkle root <code>0bba0792…a7f1bcb4</code> is committed to Bitcoin. Latest confirmed attestation: <b>block 956992</b> (2026-07-07), over the first <b>501</b> decisions; newer entries anchor in the next batch. Verify it node-free — no trust in this page required — with the OpenTimestamps client: <code>ots info &lt;proof&gt;</code>.</span>
   </div>
 
   <div class="meta-row" id="meta"></div>
@@ -163,8 +163,9 @@
       gap. It proves <b>order integrity and append-history</b>. It is <i>not</i> an independent cryptographic signature, and
       (while GRIP's source stays private) it does not let an outsider confirm each hash against the repository — it lets you
       confirm the chain is internally consistent and unbroken. The chain's Merkle root, however,
-      <b>is</b> independently committed to Bitcoin — latest confirmed attestation in <b>block 956992</b>,
-      a proof neither we nor anyone can forge or backdate — and the Ed25519 signature witness is on the
+      <b>is</b> independently committed to Bitcoin — in cumulative batches, with every OpenTimestamps proof
+      published in this repo so anyone can check it node-free, a proof neither we nor anyone can forge or backdate —
+      and the Ed25519 signature witness is on the
       <a class="repo" href="https://happiverse.grip-web.com">happiverse surface</a>.</p>
     <p>This page is the order-evident public face of GRIP's IDR decision record — one of three legs of its cryptographic
       causation system (IDR decision record / signed memory chain / <code>cite.verify</code> citation provenance), all
@@ -181,6 +182,16 @@ node verify.js idr-public.jsonl
 <span class="c"># → chain OK · N entries   (exit 0)   |   chain BROKEN at entry N  (exit 1)</span></code></pre>
     <p>Or paste <a class="repo" href="verify.js">verify.js</a> into your browser console on this page — it reads the
       already-loaded chain and prints the same verdict.</p>
+
+    <p>To verify the <b>Bitcoin anchors</b> too — still no dependencies, no Bitcoin node:</p>
+<pre><code><span class="c"># recompute every anchor root from the chain, then check a proof with the ots client</span>
+curl -sO https://codetonight-sa.github.io/grip-decision-chain/verify-anchors.js
+mkdir -p anchors
+curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/state.json
+node verify-anchors.js idr-public.jsonl anchors
+curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/anchor-manifest-501-2026-07-06.json.ots
+ots info anchors/anchor-manifest-501-2026-07-06.json.ots
+<span class="c"># → chain OK · anchors OK   |   the proof shows the Bitcoin block attestation</span></code></pre>
   </section>
 
   <footer>
@@ -239,7 +250,8 @@ function legacyHtml(r) {
     const res = await fetch('idr-public.jsonl', { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
-    rows = text.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+    window.GRIP_CHAIN_RAW = text.split('\n').filter(l => l.trim());
+    rows = window.GRIP_CHAIN_RAW.map(l => JSON.parse(l));
   } catch (e) {
     verdictEl.className = 'verdict bad';
     verdictEl.innerHTML = '<span class="badge">UNAVAILABLE</span><span class="detail">could not load the chain: ' + esc(String(e.message || e)) + '</span>';
@@ -306,6 +318,90 @@ function legacyHtml(r) {
     '</li>';
   }).join('');
   chainEl.innerHTML = html;
+})();
+
+// --- live Bitcoin anchor status + in-browser root recompute --------------
+// Renders from anchors/latest.json (updated by the anchoring pipeline); if
+// that fetch fails the static panel above stays — the page never regresses.
+async function chainRawLines(timeoutMs) {
+  const deadline = Date.now() + (timeoutMs || 10000);
+  while (!(window.GRIP_CHAIN_RAW && window.GRIP_CHAIN_RAW.length) && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  return window.GRIP_CHAIN_RAW || null;
+}
+async function rfc6962RootHex(lines) {
+  const enc = new TextEncoder();
+  const sha = (buf) => crypto.subtle.digest('SHA-256', buf);
+  const hex = (buf) => Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const cat = (...bufs) => {
+    const total = bufs.reduce((s, b) => s + b.length, 0);
+    const out = new Uint8Array(total);
+    let off = 0;
+    for (const b of bufs) { out.set(b, off); off += b.length; }
+    return out;
+  };
+  const leaves = lines.map((l) => enc.encode(l));
+  async function mth(ls) {
+    const n = ls.length;
+    if (n === 0) return new Uint8Array(await sha(enc.encode('')));
+    if (n === 1) return new Uint8Array(await sha(cat(new Uint8Array([0]), ls[0])));
+    let k = 1;
+    while (k < n) k <<= 1;
+    k >>= 1;
+    const left = await mth(ls.slice(0, k));
+    const right = await mth(ls.slice(k));
+    return new Uint8Array(await sha(cat(new Uint8Array([1]), left, right)));
+  }
+  return hex(await mth(leaves));
+}
+function shortRoot(r) { return r ? (r.slice(0, 8) + '…' + r.slice(-8)) : ''; }
+function dayOf(iso) {
+  try { const t = new Date(iso); if (isNaN(t)) return iso; return t.toISOString().slice(0, 10); } catch (e) { return iso; }
+}
+(async function renderAnchorPanel() {
+  const el = document.getElementById('anchor-detail');
+  if (!el) return;
+  let latest = null;
+  try {
+    const res = await fetch('anchors/latest.json', { cache: 'no-store' });
+    if (res.ok) latest = await res.json();
+  } catch (e) { /* static panel stays */ }
+  if (!latest || !Array.isArray(latest.history) || !latest.history.length) return;
+  const conf = latest.latest_confirmed;
+  const pend = latest.pending_anchor;
+  let html = '';
+  if (conf) {
+    html += 'The chain Merkle root over the first <b>' + conf.rows + '</b> decisions (<code>'
+      + shortRoot(conf.merkle_root) + '</code>) is committed to Bitcoin. Latest confirmed attestation: <b>block '
+      + conf.confirmed_block + '</b> (' + dayOf(conf.block_time_utc) + ')'
+      + (Array.isArray(conf.confirmed_sources) && conf.confirmed_sources.length
+        ? ', corroborated by ' + conf.confirmed_sources.length + ' independent block explorers' : '') + '. ';
+  }
+  if (pend) {
+    html += 'A newer root over the first <b>' + pend.rows + '</b> decisions (<code>'
+      + shortRoot(pend.merkle_root) + '</code>) is stamped (' + dayOf(pend.stamped_utc)
+      + ') and awaiting its Bitcoin attestation — it confirms automatically, within hours. ';
+  } else if (conf && latest.anchored_rows > conf.rows) {
+    html += 'Entries beyond ' + conf.rows + ' await the next batch. ';
+  }
+  html += 'Verify node-free — no trust in this page required — with <code>ots info &lt;proof&gt;</code>: '
+    + (pend ? '<a class="repo" href="' + pend.proof + '">pending proof</a> · ' : '')
+    + (conf ? '<a class="repo" href="' + conf.proof + '">confirmed proof</a> · ' : '')
+    + '<a class="repo" href="verify-anchors.js">verify-anchors.js</a> recomputes every root from the public chain.';
+  // Exogenous in-browser check: recompute the latest confirmed root from the
+  // raw chain lines THIS page loaded — no network, no manifest, no trust.
+  const raw = await chainRawLines(10000);
+  if (conf && raw && raw.length >= conf.rows) {
+    try {
+      const recomputed = await rfc6962RootHex(raw.slice(0, conf.rows));
+      const ok = recomputed === conf.merkle_root;
+      html += ' <b style="color:' + (ok ? 'var(--ok)' : 'var(--bad)') + '">'
+        + (ok ? '✓ root recomputed in YOUR browser — matches'
+              : '✗ browser recompute MISMATCH (' + shortRoot(recomputed) + ')') + '</b>';
+    } catch (e) { /* recompute unavailable — panel text still stands */ }
+  }
+  el.innerHTML = html;
 })();
 </script>
 </body>

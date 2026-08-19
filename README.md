@@ -40,6 +40,16 @@ node verify.js idr-public.jsonl
 # → chain BROKEN at entry K     (exit 1)
 ```
 
+To verify the Bitcoin anchors too (still no dependencies, no Bitcoin node):
+
+```bash
+curl -sO https://codetonight-sa.github.io/grip-decision-chain/verify-anchors.js
+mkdir -p anchors
+curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/state.json
+node verify-anchors.js idr-public.jsonl anchors
+# → chain OK · anchors OK — every anchor root recomputes from the public chain
+```
+
 Or open the [live view](https://codetonight-sa.github.io/grip-decision-chain/) — the same check
 runs in your browser on load, and you can paste [`verify.js`](./verify.js) into the console to
 re-run it against the loaded chain.
@@ -49,6 +59,29 @@ re-run it against the loaded chain.
 Rows are appended by [`lib/idr_public_emitter.py`](https://github.com/CodeTonight-SA/GRIP) in the
 GRIP repo (idempotent by sha — a commit is never recorded twice), then synced here. The chain
 only ever grows; it is never rewritten.
+
+## How it stays anchored
+
+The chain is committed to Bitcoin in **cumulative batches** via OpenTimestamps. Batch K anchors
+the RFC-6962 Merkle root over the first K raw lines of `idr-public.jsonl`, so the root is
+recomputable by anyone from the public file alone. A GitHub Actions pipeline in this repo
+(`.github/workflows/anchor.yml` + `scripts/anchor.py`):
+
+- **stamps** a new batch when >= 25 entries accumulate since the last anchor (or after 24 h of
+  staleness), submitting the manifest to the public OTS calendar servers — no keys, no credentials;
+- **upgrades** pending proofs to Bitcoin attestations (usually within hours) and records the
+  confirmed block only after >= 2 independent block explorers agree **exactly** with the proof's
+  computed root — a confirmation is never fabricated;
+- **publishes** everything here: `anchors/anchor-manifest-<K>.json` + its `.ots` proof,
+  `anchors/state.json` (full history) and `anchors/latest.json` (what the live page shows).
+
+The first anchor (rows 1–501, root `0bba0792…a7f1bcb4`) was stamped 2026-07-06 and confirmed in
+Bitcoin block **956992** (2026-07-07). Every later batch extends the coverage; the live page shows
+the newest confirmed block and any pending batch. Check any proof with the reference client:
+
+```bash
+ots info anchors/anchor-manifest-501-2026-07-06.json.ots
+```
 
 ---
 

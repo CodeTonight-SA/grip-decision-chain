@@ -139,6 +139,15 @@
       "rows": 1170,
       "stamped_utc": "2026-08-24T20:49:46Z",
       "status": "confirmed"
+    },
+    {
+      "manifest": "anchors/anchor-manifest-1195.json",
+      "merkle_root": "edc86781149b7f5f343fd4a772e838df4dce802928ea09444f5cafd61ecb0dd4",
+      "prev_rows": 1170,
+      "proof": "anchors/anchor-manifest-1195.json.ots",
+      "rows": 1195,
+      "stamped_utc": "2026-08-25T22:45:20Z",
+      "status": "pending"
     }
   ],
   "schema": "grip-decision-chain-anchor-state/1"

@@ -161,13 +161,24 @@
       "status": "confirmed"
     },
     {
+      "bitcoin_blocks": [
+        964103
+      ],
+      "block_hash": "00000000000000000000a8dd86ccf7ff2bc91bfea403358beaf52c9805c0dbc2",
+      "block_time_utc": "2026-08-26T06:12:32Z",
+      "confirmed_at_utc": "2026-08-26T07:54:48Z",
+      "confirmed_block": 964103,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
       "manifest": "anchors/anchor-manifest-1220.json",
       "merkle_root": "7b97e4d3c048cf50c287619166152f0f720e16ea0ac17ea30ee5cfaf8897626d",
       "prev_rows": 1195,
       "proof": "anchors/anchor-manifest-1220.json.ots",
       "rows": 1220,
       "stamped_utc": "2026-08-26T06:00:24Z",
-      "status": "pending"
+      "status": "confirmed"
     }
   ],
   "schema": "grip-decision-chain-anchor-state/1"

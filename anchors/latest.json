@@ -1,7 +1,16 @@
 {
-  "anchored_rows": 1350,
-  "generated_at": "2026-09-07T08:50:09Z",
+  "anchored_rows": 1376,
+  "generated_at": "2026-09-08T12:00:59Z",
   "history": [
+    {
+      "manifest": "anchors/anchor-manifest-1376.json",
+      "merkle_root": "70bb7a0947a9c509b4bf0c0c448ab60b236722f24ad941a22ed7d8d385bba7b6",
+      "prev_rows": 1350,
+      "proof": "anchors/anchor-manifest-1376.json.ots",
+      "rows": 1376,
+      "stamped_utc": "2026-09-08T12:00:59Z",
+      "status": "pending"
+    },
     {
       "bitcoin_blocks": [
         965900
@@ -365,7 +374,15 @@
     "stamped_utc": "2026-09-07T07:48:08Z",
     "status": "confirmed"
   },
-  "pending_anchor": null,
+  "pending_anchor": {
+    "manifest": "anchors/anchor-manifest-1376.json",
+    "merkle_root": "70bb7a0947a9c509b4bf0c0c448ab60b236722f24ad941a22ed7d8d385bba7b6",
+    "prev_rows": 1350,
+    "proof": "anchors/anchor-manifest-1376.json.ots",
+    "rows": 1376,
+    "stamped_utc": "2026-09-08T12:00:59Z",
+    "status": "pending"
+  },
   "schema": "grip-decision-chain-anchor-state/1",
-  "total_rows": 1350
+  "total_rows": 1376
 }

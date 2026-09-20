@@ -141,7 +141,7 @@
 
   <div class="anchor" id="anchor-panel" role="note">
     <span class="badge">⛓ BITCOIN-ANCHORED</span>
-    <span class="detail" id="anchor-detail">The chain's Merkle root <code>0bba0792…a7f1bcb4</code> is committed to Bitcoin. Latest confirmed attestation: <b>block 956992</b> (2026-07-07), over the first <b>501</b> decisions; newer entries anchor in the next batch. Verify it node-free — no trust in this page required — with the OpenTimestamps client: <code>ots info &lt;proof&gt;</code>.</span>
+    <span class="detail" id="anchor-detail">The chain's Merkle root <code>66ae70fd…42b7c5d2</code> is committed to Bitcoin per the published OpenTimestamps proof. Latest confirmed attestation at the last page update: <b>block 966381</b>, over the first <b>1505</b> decisions; the live check fetches the current tip. Verify the attestation itself node-free — no trust in this page required — with the OpenTimestamps client: <code>ots verify &lt;manifest&gt;.json.ots</code>.</span>
   </div>
 
   <div class="meta-row" id="meta"></div>
@@ -175,11 +175,12 @@
 
     <h2 style="margin-top:1.5rem">Verify it yourself</h2>
     <p>The same check this page ran, as a standalone script. Save the chain and run it — no dependencies:</p>
-<pre><code><span class="c"># fetch the chain + the verifier, then run it</span>
+<pre><code><span class="c"># fetch the chain, the verifier and the anchor tip, then run it</span>
 curl -sO https://codetonight-sa.github.io/grip-decision-chain/idr-public.jsonl
 curl -sO https://codetonight-sa.github.io/grip-decision-chain/verify.js
+mkdir -p anchors && curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/latest.json
 node verify.js idr-public.jsonl
-<span class="c"># → chain OK · N entries   (exit 0)   |   chain BROKEN at entry N  (exit 1)</span></code></pre>
+<span class="c"># → links OK · root … · anchor OK — matches the published anchor root   (exit 0)   |   chain BROKEN / ANCHOR MISMATCH  (exit 1)</span></code></pre>
     <p>Or paste <a class="repo" href="verify.js">verify.js</a> into your browser console on this page — it reads the
       already-loaded chain and prints the same verdict.</p>
 
@@ -189,9 +190,10 @@ curl -sO https://codetonight-sa.github.io/grip-decision-chain/verify-anchors.js
 mkdir -p anchors
 curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/state.json
 node verify-anchors.js idr-public.jsonl anchors
+curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/anchor-manifest-501-2026-07-06.json
 curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/anchor-manifest-501-2026-07-06.json.ots
-ots info anchors/anchor-manifest-501-2026-07-06.json.ots
-<span class="c"># → chain OK · anchors OK   |   the proof shows the Bitcoin block attestation</span></code></pre>
+ots verify anchors/anchor-manifest-501-2026-07-06.json.ots
+<span class="c"># → chain OK · anchors OK   |   ots confirms the Bitcoin block attestation</span></code></pre>
   </section>
 
   <footer>
@@ -250,7 +252,7 @@ function legacyHtml(r) {
     const res = await fetch('idr-public.jsonl', { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const text = await res.text();
-    window.GRIP_CHAIN_RAW = text.split('\n').filter(l => l.trim());
+    window.GRIP_CHAIN_RAW = text.split('\n').filter(l => l.length > 0);
     rows = window.GRIP_CHAIN_RAW.map(l => JSON.parse(l));
   } catch (e) {
     verdictEl.className = 'verdict bad';
@@ -268,8 +270,8 @@ function legacyHtml(r) {
   const result = verifyChain(rows);
   if (result.valid) {
     verdictEl.className = 'verdict ok';
-    verdictEl.innerHTML = '<span class="badge">✓ CHAIN VERIFIED</span>' +
-      '<span class="detail">' + rows.length + ' decisions · every prev‑hash links · nothing removed or reordered</span>';
+    verdictEl.innerHTML = '<span class="badge">✓ LINKS CONSISTENT</span>' +
+      '<span class="detail">' + rows.length + ' decisions · every prev‑hash links · internally consistent — the cryptographic root check runs next</span>';
   } else {
     verdictEl.className = 'verdict bad';
     verdictEl.innerHTML = '<span class="badge">✗ CHAIN BROKEN</span>' +
@@ -368,7 +370,11 @@ function dayOf(iso) {
     if (res.ok) latest = await res.json();
   } catch (e) { /* static panel stays */ }
   if (!latest || !Array.isArray(latest.history) || !latest.history.length) return;
-  const conf = latest.latest_confirmed;
+  // Same validity bar as verify.js: truthiness is not validation — rows must be
+  // a positive safe integer and the root a 64-hex digest before any claim uses them.
+  const validAnchor = (a) => !!a && Number.isSafeInteger(a.rows) && a.rows > 0 &&
+    typeof a.merkle_root === 'string' && /^[0-9a-f]{64}$/.test(a.merkle_root);
+  const conf = validAnchor(latest.latest_confirmed) ? latest.latest_confirmed : null;
   const pend = latest.pending_anchor;
   let html = '';
   if (conf) {
@@ -385,7 +391,7 @@ function dayOf(iso) {
   } else if (conf && latest.anchored_rows > conf.rows) {
     html += 'Entries beyond ' + conf.rows + ' await the next batch. ';
   }
-  html += 'Verify node-free — no trust in this page required — with <code>ots info &lt;proof&gt;</code>: '
+  html += 'Verify the attestation node-free — no trust in this page required — with <code>ots verify &lt;manifest&gt;.json.ots</code>: '
     + (pend ? '<a class="repo" href="' + pend.proof + '">pending proof</a> · ' : '')
     + (conf ? '<a class="repo" href="' + conf.proof + '">confirmed proof</a> · ' : '')
     + '<a class="repo" href="verify-anchors.js">verify-anchors.js</a> recomputes every root from the public chain.';
@@ -399,6 +405,19 @@ function dayOf(iso) {
       html += ' <b style="color:' + (ok ? 'var(--ok)' : 'var(--bad)') + '">'
         + (ok ? '✓ root recomputed in YOUR browser — matches'
               : '✗ browser recompute MISMATCH (' + shortRoot(recomputed) + ')') + '</b>';
+      // The headline verdict only claims cryptography once cryptography ran:
+      // upgrade on a match (never masking a broken chain), go red on mismatch.
+      const verdict = document.getElementById('verdict');
+      const total = (window.GRIP_CHAIN && window.GRIP_CHAIN.length) || raw.length;
+      if (ok && verdict && verdict.classList.contains('ok')) {
+        verdict.innerHTML = '<span class="badge">✓ ROOT MATCHES PUBLISHED ANCHOR</span>' +
+          '<span class="detail">first ' + conf.rows + ' decisions recompute in your browser to the published anchor root — the manifest attests Bitcoin block ' + conf.confirmed_block + '; confirm the attestation itself with ots verify' +
+          (total > conf.rows ? ' · ' + (total - conf.rows) + ' newer entries link‑checked, awaiting the next anchor batch' : '') + '</span>';
+      } else if (!ok && verdict) {
+        verdict.className = 'verdict bad';
+        verdict.innerHTML = '<span class="badge">✗ ANCHOR MISMATCH</span>' +
+          '<span class="detail">rows 1..' + conf.rows + ' recompute in your browser to ' + shortRoot(recomputed) + ' — not the published anchor root ' + shortRoot(conf.merkle_root) + '</span>';
+      }
     } catch (e) { /* recompute unavailable — panel text still stands */ }
   }
   el.innerHTML = html;

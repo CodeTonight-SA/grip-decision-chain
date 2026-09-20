@@ -11,7 +11,7 @@
 //   2. every anchor manifest's RFC-6962 Merkle root recomputes exactly from
 //      the first K raw lines of idr-public.jsonl,
 //   3. every manifest and OTS proof file exists (check the Bitcoin
-//      attestation itself with the reference client: ots info PROOF).
+//      attestation itself with the reference client: ots verify PROOF).
 //
 // Usage:
 //   curl -sO https://codetonight-sa.github.io/grip-decision-chain/idr-public.jsonl
@@ -159,7 +159,7 @@ async function main() {
   }
   console.log('anchors OK · ' + anchors.length + ' anchor(s) · every root '
     + 'recomputes from the public chain · check each Bitcoin attestation '
-    + 'node-free with: ots info PROOF');
+    + 'node-free with: ots verify PROOF');
 }
 
 main().catch((e) => {

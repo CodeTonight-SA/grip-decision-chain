@@ -1,0 +1,23 @@
+name: verify
+
+# The repo's product is a verifiable chain — so every push and PR must keep
+# both verifiers green against the real data. verify.js exits 1 on a broken
+# link OR an anchored-prefix root mismatch; verify-anchors.js audits every
+# anchored batch and its manifest.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Quick verifier (links + Merkle root + anchored prefix)
+        run: node verify.js idr-public.jsonl anchors
+      - name: Full anchor audit (every batch + manifests)
+        run: node verify-anchors.js idr-public.jsonl anchors

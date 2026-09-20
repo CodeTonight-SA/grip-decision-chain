@@ -21,3 +21,5 @@ jobs:
         run: node verify.js idr-public.jsonl anchors
       - name: Full anchor audit (every batch + manifests)
         run: node verify-anchors.js idr-public.jsonl anchors
+      - name: Browser-path regression (verify.js console path, vm-sandboxed)
+        run: node tests/browser-path.js

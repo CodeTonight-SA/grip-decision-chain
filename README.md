@@ -38,14 +38,16 @@ curl -sO https://codetonight-sa.github.io/grip-decision-chain/verify.js
 mkdir -p anchors
 curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/latest.json
 node verify.js idr-public.jsonl
-# → links OK · root <hex> · anchor OK (block N)   (exit 0)
-# → chain BROKEN at entry K / ANCHOR MISMATCH     (exit 1)
+# → links OK · root <hex> · anchor OK — matches published anchor root   (exit 0)
+# → chain BROKEN at entry K / ANCHOR MISMATCH                            (exit 1)
 ```
 
 `verify.js` walks every prev-hash link (internal consistency), recomputes the chain's RFC-6962
 Merkle root (real cryptography, from the public bytes alone), and — when the anchors file is
-beside the chain — checks the anchored prefix against the Bitcoin-attested root. Without the
-anchors file it says plainly that the cryptographic comparison was skipped.
+beside the chain — checks the anchored prefix against the published anchor root. It does not
+check the Bitcoin attestation itself; the OTS proof is what attests that root in Bitcoin, and
+you verify it separately with `ots verify`. Without the anchors file, verify.js says plainly
+that the cryptographic comparison was skipped.
 
 To verify the Bitcoin anchors too (still no dependencies, no Bitcoin node):
 
@@ -87,7 +89,7 @@ Bitcoin block **956992** (2026-07-07). Every later batch extends the coverage; t
 the newest confirmed block and any pending batch. Check any proof with the reference client:
 
 ```bash
-ots info anchors/anchor-manifest-501-2026-07-06.json.ots
+ots verify anchors/anchor-manifest-501-2026-07-06.json.ots
 ```
 
 ---

@@ -141,7 +141,7 @@
 
   <div class="anchor" id="anchor-panel" role="note">
     <span class="badge">⛓ BITCOIN-ANCHORED</span>
-    <span class="detail" id="anchor-detail">The chain's Merkle root <code>66ae70fd…42b7c5d2</code> is committed to Bitcoin. Latest confirmed attestation: <b>block 966381</b>, over the first <b>1505</b> decisions; newer entries anchor in the next batch. Verify it node-free — no trust in this page required — with the OpenTimestamps client: <code>ots info &lt;proof&gt;</code>.</span>
+    <span class="detail" id="anchor-detail">The chain's Merkle root <code>66ae70fd…42b7c5d2</code> is committed to Bitcoin per the published OpenTimestamps proof. Latest confirmed attestation at the last page update: <b>block 966381</b>, over the first <b>1505</b> decisions; the live check fetches the current tip. Verify the attestation itself node-free — no trust in this page required — with the OpenTimestamps client: <code>ots verify &lt;manifest&gt;.json.ots</code>.</span>
   </div>
 
   <div class="meta-row" id="meta"></div>
@@ -180,7 +180,7 @@ curl -sO https://codetonight-sa.github.io/grip-decision-chain/idr-public.jsonl
 curl -sO https://codetonight-sa.github.io/grip-decision-chain/verify.js
 mkdir -p anchors && curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/latest.json
 node verify.js idr-public.jsonl
-<span class="c"># → links OK · root … · anchor OK (block N)   (exit 0)   |   chain BROKEN / ANCHOR MISMATCH  (exit 1)</span></code></pre>
+<span class="c"># → links OK · root … · anchor OK — matches the published anchor root   (exit 0)   |   chain BROKEN / ANCHOR MISMATCH  (exit 1)</span></code></pre>
     <p>Or paste <a class="repo" href="verify.js">verify.js</a> into your browser console on this page — it reads the
       already-loaded chain and prints the same verdict.</p>
 
@@ -190,9 +190,10 @@ curl -sO https://codetonight-sa.github.io/grip-decision-chain/verify-anchors.js
 mkdir -p anchors
 curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/state.json
 node verify-anchors.js idr-public.jsonl anchors
+curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/anchor-manifest-501-2026-07-06.json
 curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/anchor-manifest-501-2026-07-06.json.ots
-ots info anchors/anchor-manifest-501-2026-07-06.json.ots
-<span class="c"># → chain OK · anchors OK   |   the proof shows the Bitcoin block attestation</span></code></pre>
+ots verify anchors/anchor-manifest-501-2026-07-06.json.ots
+<span class="c"># → chain OK · anchors OK   |   ots confirms the Bitcoin block attestation</span></code></pre>
   </section>
 
   <footer>
@@ -270,7 +271,7 @@ function legacyHtml(r) {
   if (result.valid) {
     verdictEl.className = 'verdict ok';
     verdictEl.innerHTML = '<span class="badge">✓ LINKS CONSISTENT</span>' +
-      '<span class="detail">' + rows.length + ' decisions · every prev‑hash links · internal consistency — order intact; the cryptographic root check runs next</span>';
+      '<span class="detail">' + rows.length + ' decisions · every prev‑hash links · internally consistent — the cryptographic root check runs next</span>';
   } else {
     verdictEl.className = 'verdict bad';
     verdictEl.innerHTML = '<span class="badge">✗ CHAIN BROKEN</span>' +
@@ -386,7 +387,7 @@ function dayOf(iso) {
   } else if (conf && latest.anchored_rows > conf.rows) {
     html += 'Entries beyond ' + conf.rows + ' await the next batch. ';
   }
-  html += 'Verify node-free — no trust in this page required — with <code>ots info &lt;proof&gt;</code>: '
+  html += 'Verify the attestation node-free — no trust in this page required — with <code>ots verify &lt;manifest&gt;.json.ots</code>: '
     + (pend ? '<a class="repo" href="' + pend.proof + '">pending proof</a> · ' : '')
     + (conf ? '<a class="repo" href="' + conf.proof + '">confirmed proof</a> · ' : '')
     + '<a class="repo" href="verify-anchors.js">verify-anchors.js</a> recomputes every root from the public chain.';
@@ -405,13 +406,13 @@ function dayOf(iso) {
       const verdict = document.getElementById('verdict');
       const total = (window.GRIP_CHAIN && window.GRIP_CHAIN.length) || raw.length;
       if (ok && verdict && verdict.classList.contains('ok')) {
-        verdict.innerHTML = '<span class="badge">✓ VERIFIED — ROOT MATCHES BITCOIN</span>' +
-          '<span class="detail">first ' + conf.rows + ' decisions recompute in your browser to the root attested in Bitcoin block ' + conf.confirmed_block +
+        verdict.innerHTML = '<span class="badge">✓ ROOT MATCHES PUBLISHED ANCHOR</span>' +
+          '<span class="detail">first ' + conf.rows + ' decisions recompute in your browser to the published anchor root — the manifest attests Bitcoin block ' + conf.confirmed_block + '; confirm the attestation itself with ots verify' +
           (total > conf.rows ? ' · ' + (total - conf.rows) + ' newer entries link‑checked, awaiting the next anchor batch' : '') + '</span>';
       } else if (!ok && verdict) {
         verdict.className = 'verdict bad';
         verdict.innerHTML = '<span class="badge">✗ ANCHOR MISMATCH</span>' +
-          '<span class="detail">rows 1..' + conf.rows + ' recompute in your browser to ' + shortRoot(recomputed) + ' — not the Bitcoin‑attested ' + shortRoot(conf.merkle_root) + '</span>';
+          '<span class="detail">rows 1..' + conf.rows + ' recompute in your browser to ' + shortRoot(recomputed) + ' — not the published anchor root ' + shortRoot(conf.merkle_root) + '</span>';
       }
     } catch (e) { /* recompute unavailable — panel text still stands */ }
   }

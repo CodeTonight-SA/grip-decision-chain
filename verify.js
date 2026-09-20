@@ -13,10 +13,11 @@
 //               chain lines. Real cryptography, from the public bytes alone.
 //   3. ANCHOR — if the published anchors are available (anchors/latest.json or
 //               anchors/state.json beside the chain), recomputes the root over
-//               the anchored prefix and compares it to the Bitcoin-attested
+//               the anchored prefix and compares it to the PUBLISHED anchor
 //               root. A match means the first K entries are byte-for-byte the
-//               data committed to Bitcoin — a proof nobody can forge or
-//               backdate. Check the attestation itself with: ots info <proof>
+//               data that manifest anchors. Whether that root truly sits in
+//               Bitcoin is the OTS proof's claim — this file does not check it;
+//               verify the attestation itself with: ots verify <manifest>.json.ots
 //
 // verify-anchors.js remains the full audit (every batch, every manifest);
 // this file is the quick check, and it never claims more than it ran.
@@ -111,26 +112,34 @@
     try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (e) { return null; }
   }
 
+  // Truthiness is not validation: rows must be a positive safe integer (slice
+  // silently coerces -1 or 1.5 into a different prefix) and the root must be a
+  // well-formed SHA-256 hex digest before any coverage claim is built on them.
+  function isValidAnchor(a) {
+    return !!a && Number.isSafeInteger(a.rows) && a.rows > 0 &&
+      typeof a.merkle_root === 'string' && /^[0-9a-f]{64}$/.test(a.merkle_root);
+  }
+
   // The newest CONFIRMED anchor: latest.json's tip, else the highest-rows
-  // confirmed entry in state.json. Null when no anchors are readable.
+  // confirmed entry in state.json. Null when no VALID anchor is readable.
   function findLatestAnchor(fs, path, anchorsDir) {
     var lj = readJsonQuiet(fs, path.join(anchorsDir, 'latest.json'));
-    if (lj && lj.latest_confirmed && lj.latest_confirmed.rows) return lj.latest_confirmed;
+    if (lj && isValidAnchor(lj.latest_confirmed)) return lj.latest_confirmed;
     var st = readJsonQuiet(fs, path.join(anchorsDir, 'state.json'));
     if (!st || !Array.isArray(st.anchors)) return null;
     var conf = st.anchors.filter(function (a) {
-      return a && a.status === 'confirmed' && typeof a.rows === 'number';
+      return isValidAnchor(a) && a.status === 'confirmed';
     });
     if (!conf.length) return null;
     return conf.reduce(function (a, b) { return a.rows > b.rows ? a : b; });
   }
 
   function reportNoAnchors(anchorsDir) {
-    console.log('anchors    · none found in "' + anchorsDir +
-      '" — cryptographic comparison skipped.');
+    console.log('anchors    · no usable anchor in "' + anchorsDir +
+      '" (missing or malformed) — cryptographic comparison skipped.');
     console.log('             fetch anchors/latest.json beside the chain and re-run,');
     console.log('             or run verify-anchors.js for the full anchor audit.');
-    console.log('chain OK   · order intact · root computed · anchor comparison NOT run');
+    console.log('chain OK   · links internally consistent · root computed · anchor comparison NOT run');
   }
 
   function compareAnchor(rootHex, lines, latest) {
@@ -144,13 +153,13 @@
     if (prefixRoot !== latest.merkle_root) {
       console.error('ANCHOR MISMATCH: rows 1..' + latest.rows + ' recompute to');
       console.error('  ' + prefixRoot);
-      console.error('  but the Bitcoin-attested root is');
+      console.error('  but the published anchor root is');
       console.error('  ' + latest.merkle_root);
       return false;
     }
     console.log('anchor OK  · rows 1..' + latest.rows +
-      ' recompute exactly to the Bitcoin-attested root' +
-      (latest.confirmed_block ? ' (block ' + latest.confirmed_block + ')' : ''));
+      ' recompute exactly to the published anchor root' +
+      (latest.confirmed_block ? ' (manifest: Bitcoin block ' + latest.confirmed_block + ')' : ''));
     var beyond = lines.length - latest.rows;
     if (beyond > 0) {
       console.log('             ' + beyond +
@@ -163,7 +172,9 @@
     var mods = await loadNodeModules();
     var rootHex = makeRootHex(mods.crypto);
     var file = process.argv[2] || 'idr-public.jsonl';
-    var anchorsDir = process.argv[3] || 'anchors';
+    // Default anchors live BESIDE the chain file, not under the caller's cwd.
+    var anchorsDir = process.argv[3] ||
+      mods.path.join(mods.path.dirname(mods.path.resolve(file)), 'anchors');
     var chain = readChain(mods.fs, file);
     if (!reportLinks(chain.rows, console.log, console.error)) process.exit(1);
     console.log('root       · RFC-6962 SHA-256 over all ' + chain.lines.length +
@@ -172,9 +183,9 @@
     if (!latest) { reportNoAnchors(anchorsDir); process.exit(0); }
     if (!compareAnchor(rootHex, chain.lines, latest)) process.exit(1);
     console.log('chain OK   · ' + chain.rows.length +
-      ' entries · links consistent · anchored prefix cryptographically verified');
-    console.log('             check the Bitcoin attestation itself: ots info ' +
-      (latest.proof || anchorsDir + '/<proof>.ots'));
+      ' entries · links consistent · anchored prefix matches the published root');
+    console.log('             this file does NOT check the Bitcoin attestation — do that with:');
+    console.log('             ots verify ' + (latest.proof || anchorsDir + '/<manifest>.json.ots'));
     process.exit(0);
   }
 
@@ -213,7 +224,7 @@
       var r = await fetch('anchors/latest.json', { cache: 'no-store' });
       if (!r.ok) return null;
       var j = await r.json();
-      return (j && j.latest_confirmed && j.latest_confirmed.rows) ? j.latest_confirmed : null;
+      return (j && isValidAnchor(j.latest_confirmed)) ? j.latest_confirmed : null;
     } catch (e) { return null; }
   }
 
@@ -221,17 +232,18 @@
     var prefix = await subtle.rootHex(leaves.slice(0, latest.rows));
     if (prefix !== latest.merkle_root) {
       console.log('ANCHOR MISMATCH: rows 1..' + latest.rows + ' recompute to ' +
-        prefix + ' but the Bitcoin-attested root is ' + latest.merkle_root);
+        prefix + ' but the published anchor root is ' + latest.merkle_root);
       return;
     }
     console.log('anchor OK  · rows 1..' + latest.rows +
-      ' recompute exactly to the Bitcoin-attested root (block ' +
+      ' recompute exactly to the published anchor root (manifest: Bitcoin block ' +
       latest.confirmed_block + ')');
     if (total > latest.rows) {
       console.log('             ' + (total - latest.rows) +
         ' newer entries are link-checked only until the next anchor batch.');
     }
-    console.log('chain OK   · links consistent · anchored prefix cryptographically verified');
+    console.log('chain OK   · links consistent · anchored prefix matches the published root');
+    console.log('             the Bitcoin attestation itself is not checked here — ots verify <manifest>.json.ots');
   }
 
   async function browserMain() {
@@ -253,9 +265,15 @@
       console.log('root       · RFC-6962 SHA-256 over all ' + raw.length + ' lines: ' + full);
     });
     var latest = await fetchLatestAnchor();
-    if (!latest || latest.rows > raw.length) {
-      console.log('anchors    · latest.json unavailable — cryptographic comparison ' +
+    if (!latest) {
+      console.log('anchors    · no usable anchors/latest.json — cryptographic comparison ' +
         'skipped; run verify-anchors.js for the full audit');
+      return;
+    }
+    if (latest.rows > raw.length) {
+      console.log('ANCHOR MISMATCH: the published anchor covers ' + latest.rows +
+        ' rows but this page loaded only ' + raw.length +
+        ' — the chain is truncated relative to what was anchored');
       return;
     }
     await browserCompare(subtle, leaves, raw.length, latest);

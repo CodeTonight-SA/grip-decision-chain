@@ -225,6 +225,13 @@ function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '
 // A reasoning field counts as present only if it is a non-empty string — so a
 // blank or missing what/why/how/when falls back gracefully, never renders empty.
 function has(v) { return typeof v === 'string' && v.trim().length > 0; }
+// The emitter stamps a boilerplate `how` on commits that carried no real loop
+// record — 1,944 of 1,950 how-values were this exact string on 2026-09-20. It
+// carries zero signal, so it renders as ABSENT: the handful of real values
+// still show, and the data itself is untouched (every placeholder row keeps
+// its real what/why, so no card loses its shape).
+const HOW_PLACEHOLDER = 'Direct commit (no multi-step loop recorded)';
+function realHow(v) { return has(v) && v.trim() !== HOW_PLACEHOLDER ? v : null; }
 
 function reasoningHtml(r) {
   // New-shape card: surface what/why/how prominently; when is shown as the ts.
@@ -232,7 +239,8 @@ function reasoningHtml(r) {
                            : '<p class="what">' + esc(r.subject) + '</p>';
   let rows = '';
   if (has(r.why))  rows += '<dt>Why</dt><dd>' + esc(r.why) + '</dd>';
-  if (has(r.how))  rows += '<dt>How</dt><dd>' + esc(r.how) + '</dd>';
+  const how = realHow(r.how);
+  if (how)  rows += '<dt>How</dt><dd>' + esc(how) + '</dd>';
   const reason = rows ? '<dl class="reason">' + rows + '</dl>' : '';
   return what + reason;
 }
@@ -278,7 +286,7 @@ function legacyHtml(r) {
       '<span class="detail">break at entry ' + (result.brokeAt + 1) + ' — prev‑hash does not match the prior commit</span>';
   }
 
-  const reasoned = rows.filter(r => has(r.what) || has(r.why) || has(r.how)).length;
+  const reasoned = rows.filter(r => has(r.what) || has(r.why) || realHow(r.how)).length;
   const first = rows[0], last = rows[rows.length - 1];
   metaEl.innerHTML =
     '<span>decisions <b>' + rows.length + '</b></span>' +
@@ -303,7 +311,7 @@ function legacyHtml(r) {
       ? '<span class="linkflag root">◆ chain root</span>'
       : (ok ? '<span class="linkflag ok">✓ prev‑hash links</span>'
             : '<span class="linkflag" style="color:var(--bad)">✗ link broken</span>');
-    const body = (has(r.what) || has(r.why) || has(r.how)) ? reasoningHtml(r) : legacyHtml(r);
+    const body = (has(r.what) || has(r.why) || realHow(r.how)) ? reasoningHtml(r) : legacyHtml(r);
     const prevLine = r.prev_sha
       ? '<span><span class="arrow">↑</span> prev ' + esc(r.prev_sha.slice(0, 12)) + '</span>'
       : '<span><span class="arrow">◆</span> no predecessor</span>';

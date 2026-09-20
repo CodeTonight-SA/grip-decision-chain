@@ -370,7 +370,11 @@ function dayOf(iso) {
     if (res.ok) latest = await res.json();
   } catch (e) { /* static panel stays */ }
   if (!latest || !Array.isArray(latest.history) || !latest.history.length) return;
-  const conf = latest.latest_confirmed;
+  // Same validity bar as verify.js: truthiness is not validation — rows must be
+  // a positive safe integer and the root a 64-hex digest before any claim uses them.
+  const validAnchor = (a) => !!a && Number.isSafeInteger(a.rows) && a.rows > 0 &&
+    typeof a.merkle_root === 'string' && /^[0-9a-f]{64}$/.test(a.merkle_root);
+  const conf = validAnchor(latest.latest_confirmed) ? latest.latest_confirmed : null;
   const pend = latest.pending_anchor;
   let html = '';
   if (conf) {

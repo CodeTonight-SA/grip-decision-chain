@@ -7,8 +7,10 @@
 // What it checks, in order:
 //   1. LINKS  — the first row's prev_sha is null and every later row's prev_sha
 //               equals the prior row's sha (mirrors lib/idr_public_emitter
-//               .verify_chain). This is INTERNAL CONSISTENCY only: order
-//               integrity and append-history, not cryptographic proof.
+//               .verify_chain). This is internal consistency of the supplied
+//               prev-hash references ONLY — not proof of historical order,
+//               completeness, or append-only history, and not cryptography.
+//               Those properties come from the anchor comparison below.
 //   2. ROOT   — recomputes the RFC-6962 Merkle root (SHA-256) over the raw
 //               chain lines. Real cryptography, from the public bytes alone.
 //   3. ANCHOR — if the published anchors are available (anchors/latest.json or

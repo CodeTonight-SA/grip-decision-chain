@@ -87,22 +87,39 @@ def _node_hash(left: bytes, right: bytes) -> bytes:
     return hashlib.sha256(b"\x01" + left + right).digest()
 
 
-def _mth(leaves: list[bytes]) -> bytes:
-    n = len(leaves)
+def _leaf_of(line: bytes) -> bytes:
+    """Leaf hash of one published line. A row the redaction shield rewrote AFTER
+    it was anchored carries ``leaf_sha256`` = SHA-256(0x00 || the exact
+    pre-redaction line); that value stands in for the leaf so every anchor over
+    the original bytes still recomputes. Untouched rows hash from their bytes.
+    Same rule as verify.js / verify-anchors.js."""
+    try:
+        row = json.loads(line)
+        h = row.get("leaf_sha256") if isinstance(row, dict) else None
+        if isinstance(h, str) and len(h) == 64 and all(c in "0123456789abcdef" for c in h):
+            return bytes.fromhex(h)
+    except (ValueError, AttributeError):
+        pass
+    return _leaf_hash(line)
+
+
+def _mth(leaf_hashes: list[bytes]) -> bytes:
+    n = len(leaf_hashes)
     if n == 0:
         return hashlib.sha256(b"").digest()
     if n == 1:
-        return _leaf_hash(leaves[0])
+        return leaf_hashes[0]
     k = 1
     while k < n:
         k <<= 1
     k >>= 1
-    return _node_hash(_mth(leaves[:k]), _mth(leaves[k:]))
+    return _node_hash(_mth(leaf_hashes[:k]), _mth(leaf_hashes[k:]))
 
 
 def merkle_root(leaves: list[bytes]) -> str:
-    """Hex RFC-6962 root committing to every leaf, in order."""
-    return _mth(leaves).hex()
+    """Hex RFC-6962 root committing to every leaf, in order (redacted rows via
+    their recorded pre-redaction leaf hash)."""
+    return _mth([_leaf_of(l) for l in leaves]).hex()
 
 
 # ---------------------------------------------------------------------------

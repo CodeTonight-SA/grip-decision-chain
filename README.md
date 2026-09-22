@@ -96,3 +96,15 @@ ots verify anchors/anchor-manifest-501-2026-07-06.json.ots
 
 *GRIP — General Reasoning & Intelligence Platform. This is GRIP dogfooding its own decision-record
 mechanism on itself: why did the AI do this, visibly.*
+
+## Redacted rows and the anchors (2026-09-22)
+
+Some rows of `idr-public.jsonl` have had a person's name or a personal matter
+replaced by the redaction shield (`[PERSON-n]` tokens) after they were anchored.
+Such a row carries `leaf_sha256`: the RFC 6962 leaf hash, `SHA-256(0x00 || the
+exact pre-redaction line)`. `verify.js`, `verify-anchors.js` and `scripts/anchor.py`
+use that value as the row's leaf when it is present and hash the served bytes
+otherwise, so every published anchor still recomputes from this file without
+the redacted text. A redacted row cannot hide: its `sha`, `prev_sha`, `ts` and
+position are unchanged, and the token is visible in the subject. What the field
+does not let you do is verify the redacted words themselves — by design.

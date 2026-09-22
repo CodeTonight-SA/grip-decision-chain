@@ -45,17 +45,28 @@ async function main() {
       .update(Buffer.concat([Buffer.from([0x01]), left, right])).digest();
   }
   // RFC 6962 Merkle Tree Hash — same construction scripts/anchor.py uses.
-  function mth(leaves) {
-    const n = leaves.length;
+  // A row the shield rewrote after anchoring carries leaf_sha256, the hash of
+  // the exact pre-redaction line; it stands in for the leaf (see verify.js).
+  function leafOf(line) {
+    try {
+      const row = JSON.parse(line);
+      if (row && typeof row.leaf_sha256 === 'string' && /^[0-9a-f]{64}$/.test(row.leaf_sha256)) {
+        return Buffer.from(row.leaf_sha256, 'hex');
+      }
+    } catch (e) { /* torn line: hash the bytes as served */ }
+    return leafHash(Buffer.from(line, 'utf8'));
+  }
+  function mth(leafHashes) {
+    const n = leafHashes.length;
     if (n === 0) return crypto.createHash('sha256').digest();
-    if (n === 1) return leafHash(leaves[0]);
+    if (n === 1) return leafHashes[0];
     let k = 1;
     while (k < n) k <<= 1;
     k >>= 1;
-    return nodeHash(mth(leaves.slice(0, k)), mth(leaves.slice(k)));
+    return nodeHash(mth(leafHashes.slice(0, k)), mth(leafHashes.slice(k)));
   }
   function merkleRootHex(lines) {
-    return mth(lines.map((l) => Buffer.from(l, 'utf8'))).toString('hex');
+    return mth(lines.map(leafOf)).toString('hex');
   }
   function rootShort(root) {
     return root.slice(0, 12) + '…' + root.slice(-8);

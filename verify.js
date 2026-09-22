@@ -77,18 +77,31 @@
       return crypto.createHash('sha256')
         .update(Buffer.concat([Buffer.from([0x01]), l, r])).digest();
     }
-    function mth(leaves) {
-      var n = leaves.length;
+    // Leaf hash of one published line. A row the redaction shield rewrote
+    // AFTER it was anchored carries leaf_sha256 = SHA-256(0x00 || the exact
+    // pre-redaction line); that value stands in for the leaf so the anchored
+    // root still recomputes without the redacted text. Untouched rows have no
+    // such field and hash from their served bytes exactly as before.
+    function leafOf(line) {
+      try {
+        var row = JSON.parse(line);
+        if (row && typeof row.leaf_sha256 === 'string' && /^[0-9a-f]{64}$/.test(row.leaf_sha256)) {
+          return Buffer.from(row.leaf_sha256, 'hex');
+        }
+      } catch (e) { /* torn line: hash the bytes as served */ }
+      return leafHash(Buffer.from(line, 'utf8'));
+    }
+    function mth(leafHashes) {
+      var n = leafHashes.length;
       if (n === 0) return crypto.createHash('sha256').digest();
-      if (n === 1) return leafHash(leaves[0]);
+      if (n === 1) return leafHashes[0];
       var k = 1;
       while (k < n) k <<= 1;
       k >>= 1;
-      return nodeHash(mth(leaves.slice(0, k)), mth(leaves.slice(k)));
+      return nodeHash(mth(leafHashes.slice(0, k)), mth(leafHashes.slice(k)));
     }
     return function rootHex(lines) {
-      return mth(lines.map(function (l) { return Buffer.from(l, 'utf8'); }))
-        .toString('hex');
+      return mth(lines.map(leafOf)).toString('hex');
     };
   }
 

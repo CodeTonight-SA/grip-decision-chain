@@ -206,7 +206,10 @@
 
   // --- Browser console path --------------------------------------------------
 
-  // Async RFC-6962 root over TextEncoder leaves, via WebCrypto (SubtleCrypto).
+  // Async RFC-6962 root via WebCrypto (SubtleCrypto). Leaves are LEAF HASHES,
+  // computed by leavesOf — which, exactly like the Node path's leafOf, honours
+  // leaf_sha256 on a row the redaction shield rewrote after anchoring (the
+  // stored value IS the pre-redaction leaf hash), so anchors still verify.
   function makeSubtleRoot() {
     var enc = new TextEncoder();
     function sha(b) { return window.crypto.subtle.digest('SHA-256', b); }
@@ -217,19 +220,33 @@
       bs.forEach(function (b) { out.set(b, o); o += b.length; });
       return out;
     }
-    async function mth(ls) {
-      var n = ls.length;
+    function unhex(h) {
+      var out = new Uint8Array(h.length / 2);
+      for (var i = 0; i < out.length; i++) out[i] = parseInt(h.substr(i * 2, 2), 16);
+      return out;
+    }
+    async function leafOf(line) {
+      try {
+        var row = JSON.parse(line);
+        if (row && typeof row.leaf_sha256 === 'string' && /^[0-9a-f]{64}$/.test(row.leaf_sha256)) {
+          return unhex(row.leaf_sha256);
+        }
+      } catch (e) { /* torn line: hash the bytes as served */ }
+      return new Uint8Array(await sha(cat(new Uint8Array([0]), enc.encode(line))));
+    }
+    async function mth(leafHashes) {
+      var n = leafHashes.length;
       if (n === 0) return new Uint8Array(await sha(new Uint8Array(0)));
-      if (n === 1) return new Uint8Array(await sha(cat(new Uint8Array([0]), ls[0])));
+      if (n === 1) return leafHashes[0];
       var k = 1;
       while (k < n) k <<= 1;
       k >>= 1;
       return new Uint8Array(await sha(cat(new Uint8Array([1]),
-        await mth(ls.slice(0, k)), await mth(ls.slice(k)))));
+        await mth(leafHashes.slice(0, k)), await mth(leafHashes.slice(k)))));
     }
     function hex(u8) { return Array.from(u8).map(function (b) { return b.toString(16).padStart(2, '0'); }).join(''); }
     return {
-      leavesOf: function (raw) { return raw.map(function (l) { return enc.encode(l); }); },
+      leavesOf: function (raw) { return Promise.all(raw.map(leafOf)); },
       rootHex: async function (leaves) { return hex(await mth(leaves)); },
     };
   }
@@ -275,7 +292,7 @@
       return;
     }
     var subtle = makeSubtleRoot();
-    var leaves = subtle.leavesOf(raw);
+    var leaves = await subtle.leavesOf(raw);
     subtle.rootHex(leaves).then(function (full) {
       console.log('root       · RFC-6962 SHA-256 over all ' + raw.length + ' lines: ' + full);
     });

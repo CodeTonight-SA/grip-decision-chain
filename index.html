@@ -351,16 +351,29 @@ async function rfc6962RootHex(lines) {
     for (const b of bufs) { out.set(b, off); off += b.length; }
     return out;
   };
-  const leaves = lines.map((l) => enc.encode(l));
-  async function mth(ls) {
-    const n = ls.length;
+  // Leaf hash per published line, honouring leaf_sha256 on rows the redaction
+  // shield rewrote after anchoring (the stored value IS the pre-redaction leaf
+  // hash) — mirrors verify.js/verify-anchors.js, so all surfaces agree.
+  const unhex = (h) => Uint8Array.from(h.match(/.{2}/g), (b) => parseInt(b, 16));
+  const leafOf = async (line) => {
+    try {
+      const row = JSON.parse(line);
+      if (row && typeof row.leaf_sha256 === 'string' && /^[0-9a-f]{64}$/.test(row.leaf_sha256)) {
+        return unhex(row.leaf_sha256);
+      }
+    } catch (e) { /* torn line: hash the bytes as served */ }
+    return new Uint8Array(await sha(cat(new Uint8Array([0]), enc.encode(line))));
+  };
+  const leaves = await Promise.all(lines.map(leafOf));
+  async function mth(leafHashes) {
+    const n = leafHashes.length;
     if (n === 0) return new Uint8Array(await sha(enc.encode('')));
-    if (n === 1) return new Uint8Array(await sha(cat(new Uint8Array([0]), ls[0])));
+    if (n === 1) return leafHashes[0];
     let k = 1;
     while (k < n) k <<= 1;
     k >>= 1;
-    const left = await mth(ls.slice(0, k));
-    const right = await mth(ls.slice(k));
+    const left = await mth(leafHashes.slice(0, k));
+    const right = await mth(leafHashes.slice(k));
     return new Uint8Array(await sha(cat(new Uint8Array([1]), left, right)));
   }
   return hex(await mth(leaves));

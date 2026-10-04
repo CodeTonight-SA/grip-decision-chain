@@ -1,0 +1,469 @@
+{
+  "anchors": [
+    {
+      "bitcoin_blocks": [
+        956991,
+        956992
+      ],
+      "block_hash": "00000000000000000001120a6fc591c341d8b3b321f7408ccaae92b210830984",
+      "block_time_utc": "2026-07-07T03:34:47Z",
+      "confirmed_at_utc": "2026-08-19T15:05:00Z",
+      "confirmed_block": 956992,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-501-2026-07-06.json",
+      "merkle_root": "0bba0792bf9f71caa815d0c42daf27f45baf07ef9749523be666f103a7f1bcb4",
+      "proof": "anchors/anchor-manifest-501-2026-07-06.json.ots",
+      "rows": 501,
+      "stamped_utc": "2026-07-06T19:47:37+02:00",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        963176
+      ],
+      "block_hash": "000000000000000000014d86ae39e53fecca7647be98df93d26954e4d98ef26c",
+      "block_time_utc": "2026-08-19T14:25:04Z",
+      "confirmed_at_utc": "2026-08-19T14:52:20Z",
+      "confirmed_block": 963176,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1104.json",
+      "merkle_root": "6df18183d81bcf66d90ba899749f53132300b4b0ece36a0a26a20738371fb503",
+      "prev_rows": 501,
+      "proof": "anchors/anchor-manifest-1104.json.ots",
+      "rows": 1104,
+      "stamped_utc": "2026-08-19T13:08:23Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        963236
+      ],
+      "block_hash": "0000000000000000000130a934508252c7a134621e67cd094a177ce3a66de929",
+      "block_time_utc": "2026-08-20T00:25:45Z",
+      "confirmed_at_utc": "2026-08-20T02:32:22Z",
+      "confirmed_block": 963236,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1130.json",
+      "merkle_root": "dd5e3e7980237a36f58a104fd90693352f2dcfbec216627608fecee011a197b1",
+      "prev_rows": 1104,
+      "proof": "anchors/anchor-manifest-1130.json.ots",
+      "rows": 1130,
+      "stamped_utc": "2026-08-19T23:30:20Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        963364
+      ],
+      "block_hash": "000000000000000000003a5f8c552c74842e034c925d1012f01c4d3af3602047",
+      "block_time_utc": "2026-08-21T00:28:17Z",
+      "confirmed_at_utc": "2026-08-21T01:42:06Z",
+      "confirmed_block": 963364,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1139.json",
+      "merkle_root": "7b48b5dca4bfbf3d1517116051e802ef9caec5217b9e1008780e76ecfafe88af",
+      "prev_rows": 1130,
+      "proof": "anchors/anchor-manifest-1139.json.ots",
+      "rows": 1139,
+      "stamped_utc": "2026-08-20T23:45:38Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        963505
+      ],
+      "block_hash": "00000000000000000002064fa906cf6e73512f3ea284e3ac284289c11bd31ed8",
+      "block_time_utc": "2026-08-22T00:39:57Z",
+      "confirmed_at_utc": "2026-08-22T01:42:17Z",
+      "confirmed_block": 963505,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1148.json",
+      "merkle_root": "297573cfda6aee97d0ce0f69aae11d1811821e3a29dafed9714175742ccdddf6",
+      "prev_rows": 1139,
+      "proof": "anchors/anchor-manifest-1148.json.ots",
+      "rows": 1148,
+      "stamped_utc": "2026-08-22T00:23:03Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        963756
+      ],
+      "block_hash": "00000000000000000000a981d6b9c2a95ecd3bc95780365796ba4e0371db97c1",
+      "block_time_utc": "2026-08-23T18:03:58Z",
+      "confirmed_at_utc": "2026-08-23T19:44:17Z",
+      "confirmed_block": 963756,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1150.json",
+      "merkle_root": "48d510669be7a60b0a1e10aea9735faef3d2dc383965056691e1c342775cf81c",
+      "prev_rows": 1148,
+      "proof": "anchors/anchor-manifest-1150.json.ots",
+      "rows": 1150,
+      "stamped_utc": "2026-08-23T17:43:46Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        963909
+      ],
+      "block_hash": "0000000000000000000199f8f82d27d458d47d95f912d102663c3b8ec09cc381",
+      "block_time_utc": "2026-08-24T21:33:40Z",
+      "confirmed_at_utc": "2026-08-24T23:14:56Z",
+      "confirmed_block": 963909,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1170.json",
+      "merkle_root": "44f4f0332816be0212d39e8b257b230d03dea37b53c2d701701c43b7d2f175d9",
+      "prev_rows": 1150,
+      "proof": "anchors/anchor-manifest-1170.json.ots",
+      "rows": 1170,
+      "stamped_utc": "2026-08-24T20:49:46Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        964062
+      ],
+      "block_hash": "000000000000000000000404fae5fea5408f4414e56b71a4761d27d51cf18987",
+      "block_time_utc": "2026-08-25T23:34:07Z",
+      "confirmed_at_utc": "2026-08-26T00:24:20Z",
+      "confirmed_block": 964062,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1195.json",
+      "merkle_root": "edc86781149b7f5f343fd4a772e838df4dce802928ea09444f5cafd61ecb0dd4",
+      "prev_rows": 1170,
+      "proof": "anchors/anchor-manifest-1195.json.ots",
+      "rows": 1195,
+      "stamped_utc": "2026-08-25T22:45:20Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        964103
+      ],
+      "block_hash": "00000000000000000000a8dd86ccf7ff2bc91bfea403358beaf52c9805c0dbc2",
+      "block_time_utc": "2026-08-26T06:12:32Z",
+      "confirmed_at_utc": "2026-08-26T07:54:48Z",
+      "confirmed_block": 964103,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1220.json",
+      "merkle_root": "7b97e4d3c048cf50c287619166152f0f720e16ea0ac17ea30ee5cfaf8897626d",
+      "prev_rows": 1195,
+      "proof": "anchors/anchor-manifest-1220.json.ots",
+      "rows": 1220,
+      "stamped_utc": "2026-08-26T06:00:24Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        964269,
+        964271
+      ],
+      "block_hash": "00000000000000000001c5a2a870968f9e036b131dfb971cfeb946d0d1bcf834",
+      "block_time_utc": "2026-08-27T09:18:10Z",
+      "confirmed_at_utc": "2026-08-27T11:34:37Z",
+      "confirmed_block": 964271,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1227.json",
+      "merkle_root": "049cc2e5e7b6aa17ac7b6e602bc793e68ee7ef90d5f75517efe2a9a17572c394",
+      "prev_rows": 1220,
+      "proof": "anchors/anchor-manifest-1227.json.ots",
+      "rows": 1227,
+      "stamped_utc": "2026-08-27T07:42:32Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        964672
+      ],
+      "block_hash": "00000000000000000001adfaadbe5293761c11047bea202b38b5ff597231e819",
+      "block_time_utc": "2026-08-30T03:28:43Z",
+      "confirmed_at_utc": "2026-08-30T04:00:22Z",
+      "confirmed_block": 964672,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1253.json",
+      "merkle_root": "43f48926ddfdcf4c3d250f58faf0052444e3ce13a7fcd141de41782069c240ab",
+      "prev_rows": 1227,
+      "proof": "anchors/anchor-manifest-1253.json.ots",
+      "rows": 1253,
+      "stamped_utc": "2026-08-30T03:15:19Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        964828,
+        964831
+      ],
+      "block_hash": "000000000000000000003d984a1017b6ba27a591348864e5f5d92e8e9adb5249",
+      "block_time_utc": "2026-08-31T05:23:48Z",
+      "confirmed_at_utc": "2026-08-31T06:44:52Z",
+      "confirmed_block": 964831,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1271.json",
+      "merkle_root": "4aa8f90bad7a7c190e2410fbe981f3548b487285900c11a5e2e655dc96d5aeb6",
+      "prev_rows": 1253,
+      "proof": "anchors/anchor-manifest-1271.json.ots",
+      "rows": 1271,
+      "stamped_utc": "2026-08-31T03:46:55Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        965067
+      ],
+      "block_hash": "00000000000000000000313613b8241543f12501e686eaa2df60efab3b84dbe9",
+      "block_time_utc": "2026-09-01T18:22:49Z",
+      "confirmed_at_utc": "2026-09-01T19:17:49Z",
+      "confirmed_block": 965067,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1295.json",
+      "merkle_root": "bf04a08b59594946ebd4004e8f373c249a06266676449f92d1b0951b13d2147a",
+      "prev_rows": 1271,
+      "proof": "anchors/anchor-manifest-1295.json.ots",
+      "rows": 1295,
+      "stamped_utc": "2026-09-01T17:40:42Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        965161
+      ],
+      "block_hash": "0000000000000000000062e6a780d36f11cc5bdb4944bc0256fc07e9a5bb194d",
+      "block_time_utc": "2026-09-02T10:59:40Z",
+      "confirmed_at_utc": "2026-09-02T12:33:18Z",
+      "confirmed_block": 965161,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1321.json",
+      "merkle_root": "d7f3cd40982b07900102925a82874c756b91d19478e68b1ba598732621a9bebf",
+      "prev_rows": 1295,
+      "proof": "anchors/anchor-manifest-1321.json.ots",
+      "rows": 1321,
+      "stamped_utc": "2026-09-02T10:45:21Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        965385
+      ],
+      "block_hash": "000000000000000000014da41cd775213d9135a3995a78945a06527e395e206d",
+      "block_time_utc": "2026-09-03T22:30:37Z",
+      "confirmed_at_utc": "2026-09-03T23:40:56Z",
+      "confirmed_block": 965385,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1323.json",
+      "merkle_root": "e2dd976c3732de4f31388a6ddf633959c7d7e454c3b8014d78636328a563932e",
+      "prev_rows": 1321,
+      "proof": "anchors/anchor-manifest-1323.json.ots",
+      "rows": 1323,
+      "stamped_utc": "2026-09-03T22:20:01Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        965726
+      ],
+      "block_hash": "00000000000000000001f781891cfa110bd1f01f75757fa2c0363ed7fc1da97f",
+      "block_time_utc": "2026-09-06T07:29:20Z",
+      "confirmed_at_utc": "2026-09-06T07:45:21Z",
+      "confirmed_block": 965726,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1340.json",
+      "merkle_root": "163a4e55dc0e8d5461b52a273b96d40effe6cae638d89ab54cfaecde59bdb0cd",
+      "prev_rows": 1323,
+      "proof": "anchors/anchor-manifest-1340.json.ots",
+      "rows": 1340,
+      "stamped_utc": "2026-09-06T05:40:34Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        965900
+      ],
+      "block_hash": "0000000000000000000056b59ff5f4af3ca8b47837f2eac5d83a271c3e6b9851",
+      "block_time_utc": "2026-09-07T08:11:49Z",
+      "confirmed_at_utc": "2026-09-07T08:50:09Z",
+      "confirmed_block": 965900,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1350.json",
+      "merkle_root": "0fad16c22d775960cb913db051887778cb7ee9d6388d355d5cad69c2be8f6c66",
+      "prev_rows": 1340,
+      "proof": "anchors/anchor-manifest-1350.json.ots",
+      "rows": 1350,
+      "stamped_utc": "2026-09-07T07:48:08Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        966068
+      ],
+      "block_hash": "000000000000000000007f439a1d48f3f4b832a1b68f8794d25deb55983fe0c7",
+      "block_time_utc": "2026-09-08T12:02:58Z",
+      "confirmed_at_utc": "2026-09-08T12:32:16Z",
+      "confirmed_block": 966068,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1376.json",
+      "merkle_root": "70bb7a0947a9c509b4bf0c0c448ab60b236722f24ad941a22ed7d8d385bba7b6",
+      "prev_rows": 1350,
+      "proof": "anchors/anchor-manifest-1376.json.ots",
+      "rows": 1376,
+      "stamped_utc": "2026-09-08T12:00:59Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        966300,
+        966301
+      ],
+      "block_hash": "000000000000000000010967253ee8bc4c05f261c76c7c9d457fc06a93fc5bfe",
+      "block_time_utc": "2026-09-10T03:57:26Z",
+      "confirmed_at_utc": "2026-09-10T05:21:10Z",
+      "confirmed_block": 966301,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1402.json",
+      "merkle_root": "9a55cad90bf0eabc4570da45224a58209716aa7291c84ccf0e60abee190a0ff5",
+      "prev_rows": 1376,
+      "proof": "anchors/anchor-manifest-1402.json.ots",
+      "rows": 1402,
+      "stamped_utc": "2026-09-10T02:45:22Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        966381
+      ],
+      "block_hash": "00000000000000000000f104e45475b79e600a1889a446f779294e108a435a07",
+      "block_time_utc": "2026-09-10T16:49:24Z",
+      "confirmed_at_utc": "2026-09-10T17:40:50Z",
+      "confirmed_block": 966381,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-1505.json",
+      "merkle_root": "66ae70fd348cda7ff18da3bfdae88d6301371becdc47c4cfdaa2b48842b7c5d2",
+      "prev_rows": 1402,
+      "proof": "anchors/anchor-manifest-1505.json.ots",
+      "rows": 1505,
+      "stamped_utc": "2026-09-10T16:00:58Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        968347,
+        968348
+      ],
+      "block_hash": "000000000000000000012a960d57d60d45f815d999aa25ca9858e821f82c57ee",
+      "block_time_utc": "2026-09-24T03:56:51Z",
+      "confirmed_at_utc": "2026-09-24T05:23:18Z",
+      "confirmed_block": 968348,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-2140.json",
+      "merkle_root": "ec431a068c695d6a4503005daf78a3307a3d3dd050c7d66e8116b20250b1313b",
+      "prev_rows": 1505,
+      "proof": "anchors/anchor-manifest-2140.json.ots",
+      "rows": 2140,
+      "stamped_utc": "2026-09-24T03:31:03Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        968437
+      ],
+      "block_hash": "00000000000000000000721837ba286f22ad70416d203548156de31bebddc128",
+      "block_time_utc": "2026-09-24T18:39:16Z",
+      "confirmed_at_utc": "2026-09-24T19:23:13Z",
+      "confirmed_block": 968437,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-2215.json",
+      "merkle_root": "08353abc6512831a48b5373b5d7719b6dde4a8666da4c9b22e293182ee3f517f",
+      "prev_rows": 2140,
+      "proof": "anchors/anchor-manifest-2215.json.ots",
+      "rows": 2215,
+      "stamped_utc": "2026-09-24T18:23:07Z",
+      "status": "confirmed"
+    },
+    {
+      "bitcoin_blocks": [
+        968581
+      ],
+      "block_hash": "000000000000000000014eae325c224b29550fc9623077e4416244da3bc123dc",
+      "block_time_utc": "2026-09-25T19:44:36Z",
+      "confirmed_at_utc": "2026-09-25T21:23:14Z",
+      "confirmed_block": 968581,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
+      "manifest": "anchors/anchor-manifest-2229.json",
+      "merkle_root": "ef9034de87fa16489789529cd87cea442737c72178081abac927672ca63e7da7",
+      "prev_rows": 2215,
+      "proof": "anchors/anchor-manifest-2229.json.ots",
+      "rows": 2229,
+      "stamped_utc": "2026-09-25T19:23:08Z",
+      "status": "confirmed"
+    }
+  ],
+  "schema": "grip-decision-chain-anchor-state/1"
+}

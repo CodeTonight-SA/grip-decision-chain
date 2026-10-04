@@ -1,0 +1,11 @@
+{
+  "artifact": "grip-public-decision-chain",
+  "canonical_merkle_root_rfc6962": "70bb7a0947a9c509b4bf0c0c448ab60b236722f24ad941a22ed7d8d385bba7b6",
+  "chain_head_sha": "36b6cfcb18073ddce898e4eae5c3e96bbc74d55a",
+  "chain_head_ts": "2026-09-08T11:53:55+00:00",
+  "leaf_definition": "each exact JSONL line of idr-public.jsonl, in order \u2014 the first rows lines",
+  "prev_rows": 1350,
+  "rows": 1376,
+  "schema": "grip-decision-chain-anchor-manifest/1",
+  "verify": "recompute the RFC-6962 Merkle root over the first rows raw lines of idr-public.jsonl; it must equal canonical_merkle_root_rfc6962. Then run 'ots info' on this file's .ots proof \u2014 or scripts/verify-anchors.js \u2014 to check the Bitcoin commitment of this manifest."
+}

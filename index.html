@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GRIP — Decision Chain</title>
+<meta name="description" content="Every decision GRIP's AI shipped, in order — the what, why, how and when of each one. Each entry is a real commit; the prev-hash link makes any removal or reordering visible. Verify it yourself.">
+<style>
+  :root {
+    --paper: #f4f3ee;
+    --ink: #15192b;          /* navy — 13.8:1 on paper (AAA) */
+    --muted: #4b5168;        /* 7.0:1 on paper (AAA)         */
+    --faint: #6b7186;        /* 4.9:1 on paper (AA)          */
+    --line: #d9d6cc;
+    --accent: #a64b0a;       /* copper — 5.1:1 on paper (AA) */
+    --ok: #1d6b3f;           /* green — 5.3:1 on paper (AA)  */
+    --bad: #b3261e;          /* red   — 5.4:1 on paper (AA)  */
+    --card: #fbfaf6;
+    --chip: #eceae1;
+    --mono: ui-monospace, "SF Mono", "IBM Plex Mono", "Cascadia Code", Menlo, monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); line-height: 1.55;
+    font-size: 16px;
+    padding: max(env(safe-area-inset-top), 1.5rem) 1.25rem 4rem;
+  }
+  .wrap { max-width: 56rem; margin: 0 auto; }
+  header { border-bottom: 2px solid var(--ink); padding-bottom: 1.25rem; margin-bottom: 1.5rem; }
+  .eyebrow { font-family: var(--mono); font-size: .72rem; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); margin: 0 0 .4rem; }
+  h1 { font-size: clamp(1.7rem, 5vw, 2.6rem); margin: 0 0 .5rem; letter-spacing: -.02em; font-weight: 650; }
+  .lede { color: var(--muted); font-size: 1.02rem; max-width: 44rem; margin: 0; }
+  .lede b { color: var(--ink); font-weight: 600; }
+
+  .verdict {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem 1rem;
+    margin: 1.5rem 0; padding: 1rem 1.15rem; border: 1px solid var(--line);
+    border-left: 4px solid var(--muted); background: var(--card); border-radius: 3px;
+  }
+  .verdict.ok  { border-left-color: var(--ok); }
+  .verdict.bad { border-left-color: var(--bad); }
+  .verdict .badge { font-family: var(--mono); font-weight: 700; font-size: 1rem; letter-spacing: .02em; }
+  .verdict.ok  .badge { color: var(--ok); }
+  .verdict.bad .badge { color: var(--bad); }
+  .verdict .detail { font-family: var(--mono); font-size: .82rem; color: var(--muted); }
+
+  .anchor { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem 1rem; margin: 1.5rem 0; padding: 1rem 1.15rem; border: 1px solid var(--line); border-left: 4px solid var(--accent); background: var(--card); border-radius: 3px; }
+  .anchor .badge { font-family: var(--mono); font-weight: 700; font-size: .95rem; color: var(--accent); letter-spacing: .02em; white-space: nowrap; }
+  .anchor .detail { font-family: var(--sans); font-size: .9rem; color: var(--muted); }
+  .anchor .detail b { color: var(--ink); font-weight: 600; }
+  .anchor code { font-family: var(--mono); font-size: .82em; background: var(--chip); padding: .05rem .3rem; border-radius: 3px; word-break: break-all; }
+
+  .meta-row { display: flex; flex-wrap: wrap; gap: .4rem 1.5rem; font-family: var(--mono); font-size: .78rem; color: var(--muted); margin: -.5rem 0 1.75rem; }
+  .meta-row b { color: var(--ink); font-weight: 600; }
+
+  ol.chain { list-style: none; margin: 0; padding: 0; }
+  li.entry {
+    position: relative; background: var(--card); border: 1px solid var(--line);
+    border-radius: 6px; padding: 1rem 1.1rem 1.05rem; margin: 0 0 .85rem;
+  }
+  /* The verified-link rail: a copper edge means this row's prev-hash matched. */
+  li.entry.linked { border-left: 3px solid var(--ok); }
+  li.entry.root   { border-left: 3px solid var(--accent); }
+  li.entry .top { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem .7rem; margin-bottom: .5rem; }
+  .seq { font-family: var(--mono); font-size: .68rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: .05rem .5rem; }
+  .linkflag { font-family: var(--mono); font-size: .68rem; font-weight: 600; display: inline-flex; align-items: center; gap: .25rem; }
+  .linkflag.ok   { color: var(--ok); }
+  .linkflag.root { color: var(--accent); }
+  .ts  { font-family: var(--mono); font-size: .72rem; color: var(--faint); margin-left: auto; }
+
+  /* WHAT — the headline decision, the most prominent line on the card. */
+  .what { font-size: 1.04rem; font-weight: 600; color: var(--ink); margin: 0 0 .55rem; line-height: 1.4; overflow-wrap: anywhere; }
+  .subject-only { font-size: .98rem; color: var(--ink); margin: 0 0 .55rem; overflow-wrap: anywhere; }
+
+  /* WHY / HOW — labelled reasoning rows. */
+  .reason { display: grid; grid-template-columns: 3.2rem 1fr; gap: .15rem .7rem; margin: .35rem 0 0; }
+  .reason dt { font-family: var(--mono); font-size: .64rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); padding-top: .12rem; }
+  .reason dd { margin: 0; font-size: .9rem; color: var(--muted); overflow-wrap: anywhere; white-space: pre-wrap; }
+
+  .no-reasoning { font-size: .8rem; color: var(--faint); font-style: italic; margin: .15rem 0 0; }
+
+  /* SHA + prev-hash provenance footer of each card. */
+  .prov { display: flex; flex-wrap: wrap; gap: .15rem .9rem; margin-top: .7rem; padding-top: .55rem; border-top: 1px dashed var(--line); font-family: var(--mono); font-size: .68rem; color: var(--faint); }
+  .prov .sha { color: var(--accent); font-weight: 600; word-break: break-all; }
+  .prov .arrow { color: var(--faint); }
+
+  section.explain { margin-top: 2.75rem; border-top: 1px solid var(--line); padding-top: 1.5rem; }
+  section.explain h2 { font-size: 1.05rem; margin: 0 0 .6rem; }
+  section.explain p { color: var(--muted); font-size: .92rem; max-width: 46rem; }
+  section.explain code { font-family: var(--mono); font-size: .85em; background: var(--chip); padding: .05rem .3rem; border-radius: 3px; }
+  pre {
+    background: var(--ink); color: #e8e6df; font-family: var(--mono); font-size: .78rem;
+    line-height: 1.5; padding: 1rem 1.1rem; border-radius: 5px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  pre code { background: none; padding: 0; }
+  pre .c { color: #9aa3b8; }
+  a.repo { color: var(--accent); text-decoration: none; border-bottom: 1px solid currentColor; }
+  a.repo:hover { color: var(--ink); }
+  footer { margin-top: 3rem; padding-top: 1.25rem; border-top: 1px solid var(--line); font-family: var(--mono); font-size: .72rem; color: var(--muted); }
+  footer a { color: var(--accent); }
+  .err { color: var(--bad); font-family: var(--mono); font-size: .85rem; }
+
+  /* Mobile-first: stack the timestamp + collapse the reason grid on narrow screens. */
+  @media (max-width: 480px) {
+    body { padding-left: 1rem; padding-right: 1rem; }
+    .ts { margin-left: 0; width: 100%; }
+    .reason { grid-template-columns: 1fr; gap: 0 0; }
+    .reason dt { padding-top: .45rem; }
+  }
+  /* 44px touch targets for the only interactive elements (links). */
+  a { min-height: 44px; }
+  a.repo, footer a, section.explain a { display: inline; min-height: 0; }
+  @media (hover: none) {
+    a.repo, footer a { padding: .15rem 0; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    li.entry { transition: border-color .15s ease; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">GRIP · order-evident decision chain · HAPPI/1.3</p>
+    <h1>The AI's decisions, in order.</h1>
+    <p class="lede">Every card below is a <b>real decision</b> GRIP's AI shipped to its own codebase — and now carries the
+      <b>what, why, how and when</b> behind it. Each one holds the hash of the decision before it, so removing or reordering
+      any entry <b>breaks the chain visibly</b>. The check runs in your browser on load. You don't have to trust this page;
+      <b>verify it yourself</b>.</p>
+    <p class="lede" style="margin-top:.65rem;font-size:.92rem">This is the public face of GRIP's <b>IDR decision record</b> — the order-evident leg of a three-part cryptographic causation system: IDR decision record · signed memory chain · deterministic citation provenance. Full signing, Merkle inclusion proofs, and in-browser witness are on the <a class="repo" href="https://happiverse.grip-web.com">happiverse proof surface</a> (HAPPI/1.3).</p>
+  </header>
+
+  <div id="verdict" class="verdict" role="status" aria-live="polite">
+    <span class="badge">CHECKING…</span>
+    <span class="detail">running the chain integrity check</span>
+  </div>
+
+  <div class="anchor" id="anchor-panel" role="note">
+    <span class="badge">⛓ BITCOIN-ANCHORED</span>
+    <span class="detail" id="anchor-detail">The chain's Merkle root <code>66ae70fd…42b7c5d2</code> is committed to Bitcoin per the published OpenTimestamps proof. Latest confirmed attestation at the last page update: <b>block 966381</b>, over the first <b>1505</b> decisions; the live check fetches the current tip. Verify the attestation itself node-free — no trust in this page required — with the OpenTimestamps client: <code>ots verify &lt;manifest&gt;.json.ots</code>.</span>
+  </div>
+
+  <div class="meta-row" id="meta"></div>
+
+  <ol class="chain" id="chain" aria-label="GRIP decision chain, newest first"></ol>
+
+  <section class="explain">
+    <h2>What a card shows</h2>
+    <p>Newer decisions carry four plain-English fields derived honestly from the commit itself — <b>what</b> changed (the
+      decision in one sentence), <b>why</b> (the rationale, from the commit message), <b>how</b> (the loop or method that
+      produced it), and <b>when</b> (the moment it shipped). Decisions recorded before these fields existed show only their
+      one-line subject, labelled plainly — never hidden, never faked.</p>
+
+    <h2 style="margin-top:1.5rem">What this proves — and what it doesn't</h2>
+    <p>This is an <b>order-evident hash chain</b>. Each row is <code>{sha, subject, ts, prev_sha}</code> plus the optional
+      <code>what/why/how/when</code> reasoning — only the commit hash, its subject, its timestamp, a pointer to the previous
+      commit, and plain-language reasoning. No code, no diffs, no file paths, no client data: an allowlist by construction.
+      Because <code>prev_sha</code> links every row to the one before it, deleting or reordering an entry leaves a visible
+      gap. It proves <b>order integrity and append-history</b>. It is <i>not</i> an independent cryptographic signature, and
+      (while GRIP's source stays private) it does not let an outsider confirm each hash against the repository — it lets you
+      confirm the chain is internally consistent and unbroken. The chain's Merkle root, however,
+      <b>is</b> independently committed to Bitcoin — in cumulative batches, with every OpenTimestamps proof
+      published in this repo so anyone can check it node-free, a proof neither we nor anyone can forge or backdate —
+      and the Ed25519 signature witness is on the
+      <a class="repo" href="https://happiverse.grip-web.com">happiverse surface</a>.</p>
+    <p>This page is the order-evident public face of GRIP's IDR decision record — one of three legs of its cryptographic
+      causation system (IDR decision record / signed memory chain / <code>cite.verify</code> citation provenance), all
+      conformant with the HAPPI/1.3 protocol. For signed, Merkle-rooted, in-browser-verifiable entries, see the
+      <a class="repo" href="https://happiverse.grip-web.com">happiverse proof surface</a>: that surface answers
+      "is the signature valid?"; this page answers "did the order change?"</p>
+
+    <h2 style="margin-top:1.5rem">Verify it yourself</h2>
+    <p>The same check this page ran, as a standalone script. Save the chain and run it — no dependencies:</p>
+<pre><code><span class="c"># fetch the chain, the verifier and the anchor tip, then run it</span>
+curl -sO https://codetonight-sa.github.io/grip-decision-chain/idr-public.jsonl
+curl -sO https://codetonight-sa.github.io/grip-decision-chain/verify.js
+mkdir -p anchors && curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/latest.json
+node verify.js idr-public.jsonl
+<span class="c"># → links OK · root … · anchor OK — matches the published anchor root   (exit 0)   |   chain BROKEN / ANCHOR MISMATCH  (exit 1)</span></code></pre>
+    <p>Or paste <a class="repo" href="verify.js">verify.js</a> into your browser console on this page — it reads the
+      already-loaded chain and prints the same verdict.</p>
+
+    <p>To verify the <b>Bitcoin anchors</b> too — still no dependencies, no Bitcoin node:</p>
+<pre><code><span class="c"># recompute every anchor root from the chain, then check a proof with the ots client</span>
+curl -sO https://codetonight-sa.github.io/grip-decision-chain/verify-anchors.js
+mkdir -p anchors
+curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/state.json
+node verify-anchors.js idr-public.jsonl anchors
+curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/anchor-manifest-501-2026-07-06.json
+curl -sO --output-dir anchors https://codetonight-sa.github.io/grip-decision-chain/anchors/anchor-manifest-501-2026-07-06.json.ots
+ots verify anchors/anchor-manifest-501-2026-07-06.json.ots
+<span class="c"># → chain OK · anchors OK   |   ots confirms the Bitcoin block attestation</span></code></pre>
+  </section>
+
+  <footer>
+    GRIP — General Reasoning &amp; Intelligence Platform · decision chain emitted by
+    <code>idr_public_emitter</code> · source <a class="repo" href="https://github.com/CodeTonight-SA/grip-decision-chain">CodeTonight-SA/grip-decision-chain</a>
+  </footer>
+</div>
+
+<script>
+// Client-side mirror of lib/idr_public_emitter.verify_chain — first row prev_sha
+// must be null; every later row's prev_sha must equal the prior row's sha.
+function verifyChain(rows) {
+  let prev = null;
+  for (let i = 0; i < rows.length; i++) {
+    if ((rows[i].prev_sha ?? null) !== prev) return { valid: false, brokeAt: i };
+    prev = rows[i].sha;
+  }
+  return { valid: true, brokeAt: -1 };
+}
+function fmtTs(iso) {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: '2-digit',
+      hour: '2-digit', minute: '2-digit' }) + ' ' + (iso.slice(-6));
+  } catch { return iso; }
+}
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+// A reasoning field counts as present only if it is a non-empty string — so a
+// blank or missing what/why/how/when falls back gracefully, never renders empty.
+function has(v) { return typeof v === 'string' && v.trim().length > 0; }
+// The emitter stamps a boilerplate `how` on commits that carried no real loop
+// record — 1,944 of 1,950 how-values were this exact string on 2026-09-20. It
+// carries zero signal, so it renders as ABSENT: the handful of real values
+// still show, and the data itself is untouched (every placeholder row keeps
+// its real what/why, so no card loses its shape).
+const HOW_PLACEHOLDER = 'Direct commit (no multi-step loop recorded)';
+function realHow(v) { return has(v) && v.trim() !== HOW_PLACEHOLDER ? v : null; }
+
+function reasoningHtml(r) {
+  // New-shape card: surface what/why/how prominently; when is shown as the ts.
+  const what = has(r.what) ? '<p class="what">' + esc(r.what) + '</p>'
+                           : '<p class="what">' + esc(r.subject) + '</p>';
+  let rows = '';
+  if (has(r.why))  rows += '<dt>Why</dt><dd>' + esc(r.why) + '</dd>';
+  const how = realHow(r.how);
+  if (how)  rows += '<dt>How</dt><dd>' + esc(how) + '</dd>';
+  const reason = rows ? '<dl class="reason">' + rows + '</dl>' : '';
+  return what + reason;
+}
+function legacyHtml(r) {
+  // Old-shape card: only the subject exists. Show it, labelled honestly —
+  // recorded before the reasoning fields existed. Never blank, never faked.
+  return '<p class="subject-only">' + esc(r.subject) + '</p>' +
+    '<p class="no-reasoning">Recorded before reasoning fields existed — subject only.</p>';
+}
+
+(async function () {
+  const verdictEl = document.getElementById('verdict');
+  const chainEl = document.getElementById('chain');
+  const metaEl = document.getElementById('meta');
+  let rows;
+  try {
+    const res = await fetch('idr-public.jsonl', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    window.GRIP_CHAIN_RAW = text.split('\n').filter(l => l.length > 0);
+    rows = window.GRIP_CHAIN_RAW.map(l => JSON.parse(l));
+  } catch (e) {
+    verdictEl.className = 'verdict bad';
+    verdictEl.innerHTML = '<span class="badge">UNAVAILABLE</span><span class="detail">could not load the chain: ' + esc(String(e.message || e)) + '</span>';
+    return;
+  }
+  if (!rows.length) {
+    verdictEl.className = 'verdict';
+    verdictEl.innerHTML = '<span class="badge">EMPTY</span><span class="detail">no decisions recorded yet</span>';
+    return;
+  }
+  // Expose for the console-paste verify path.
+  window.GRIP_CHAIN = rows;
+
+  const result = verifyChain(rows);
+  if (result.valid) {
+    verdictEl.className = 'verdict ok';
+    verdictEl.innerHTML = '<span class="badge">✓ LINKS CONSISTENT</span>' +
+      '<span class="detail">' + rows.length + ' decisions · every prev‑hash links · internally consistent — the cryptographic root check runs next</span>';
+  } else {
+    verdictEl.className = 'verdict bad';
+    verdictEl.innerHTML = '<span class="badge">✗ CHAIN BROKEN</span>' +
+      '<span class="detail">break at entry ' + (result.brokeAt + 1) + ' — prev‑hash does not match the prior commit</span>';
+  }
+
+  const reasoned = rows.filter(r => has(r.what) || has(r.why) || realHow(r.how)).length;
+  const first = rows[0], last = rows[rows.length - 1];
+  metaEl.innerHTML =
+    '<span>decisions <b>' + rows.length + '</b></span>' +
+    '<span>with reasoning <b>' + reasoned + '</b></span>' +
+    '<span>root <b>' + esc(first.sha.slice(0, 10)) + '</b></span>' +
+    '<span>head <b>' + esc(last.sha.slice(0, 10)) + '</b></span>' +
+    '<span>since <b>' + esc(first.ts.slice(0, 10)) + '</b></span>';
+
+  // Per-row link integrity: a row is "linked" iff its prev_sha equals the prior
+  // row's sha (root for the first). This drives the verified-link rail per card.
+  const linkOk = rows.map((r, i) =>
+    i === 0 ? (r.prev_sha ?? null) === null : r.prev_sha === rows[i - 1].sha);
+
+  // Newest decision first (most recent at top); the chain reads root→head internally.
+  const html = rows.slice().reverse().map((r, idx) => {
+    const i = rows.length - 1 - idx;          // original index
+    const seq = i + 1;
+    const isRoot = i === 0;
+    const ok = linkOk[i];
+    const cls = isRoot ? 'entry root' : (ok ? 'entry linked' : 'entry');
+    const flag = isRoot
+      ? '<span class="linkflag root">◆ chain root</span>'
+      : (ok ? '<span class="linkflag ok">✓ prev‑hash links</span>'
+            : '<span class="linkflag" style="color:var(--bad)">✗ link broken</span>');
+    const body = (has(r.what) || has(r.why) || realHow(r.how)) ? reasoningHtml(r) : legacyHtml(r);
+    const prevLine = r.prev_sha
+      ? '<span><span class="arrow">↑</span> prev ' + esc(r.prev_sha.slice(0, 12)) + '</span>'
+      : '<span><span class="arrow">◆</span> no predecessor</span>';
+    return '<li class="' + cls + '">' +
+      '<div class="top">' +
+        '<span class="seq">#' + seq + '</span>' + flag +
+        '<span class="ts">' + esc(fmtTs(r.ts)) + '</span>' +
+      '</div>' +
+      body +
+      '<div class="prov">' +
+        '<span class="sha" title="' + esc(r.sha) + '">' + esc(r.sha.slice(0, 12)) + '</span>' +
+        prevLine +
+      '</div>' +
+    '</li>';
+  }).join('');
+  chainEl.innerHTML = html;
+})();
+
+// --- live Bitcoin anchor status + in-browser root recompute --------------
+// Renders from anchors/latest.json (updated by the anchoring pipeline); if
+// that fetch fails the static panel above stays — the page never regresses.
+async function chainRawLines(timeoutMs) {
+  const deadline = Date.now() + (timeoutMs || 10000);
+  while (!(window.GRIP_CHAIN_RAW && window.GRIP_CHAIN_RAW.length) && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 150));
+  }
+  return window.GRIP_CHAIN_RAW || null;
+}
+async function rfc6962RootHex(lines) {
+  const enc = new TextEncoder();
+  const sha = (buf) => crypto.subtle.digest('SHA-256', buf);
+  const hex = (buf) => Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  const cat = (...bufs) => {
+    const total = bufs.reduce((s, b) => s + b.length, 0);
+    const out = new Uint8Array(total);
+    let off = 0;
+    for (const b of bufs) { out.set(b, off); off += b.length; }
+    return out;
+  };
+  // Leaf hash per published line, honouring leaf_sha256 on rows the redaction
+  // shield rewrote after anchoring (the stored value IS the pre-redaction leaf
+  // hash) — mirrors verify.js/verify-anchors.js, so all surfaces agree.
+  const unhex = (h) => Uint8Array.from(h.match(/.{2}/g), (b) => parseInt(b, 16));
+  const leafOf = async (line) => {
+    try {
+      const row = JSON.parse(line);
+      if (row && typeof row.leaf_sha256 === 'string' && /^[0-9a-f]{64}$/.test(row.leaf_sha256)) {
+        return unhex(row.leaf_sha256);
+      }
+    } catch (e) { /* torn line: hash the bytes as served */ }
+    return new Uint8Array(await sha(cat(new Uint8Array([0]), enc.encode(line))));
+  };
+  const leaves = await Promise.all(lines.map(leafOf));
+  async function mth(leafHashes) {
+    const n = leafHashes.length;
+    if (n === 0) return new Uint8Array(await sha(enc.encode('')));
+    if (n === 1) return leafHashes[0];
+    let k = 1;
+    while (k < n) k <<= 1;
+    k >>= 1;
+    const left = await mth(leafHashes.slice(0, k));
+    const right = await mth(leafHashes.slice(k));
+    return new Uint8Array(await sha(cat(new Uint8Array([1]), left, right)));
+  }
+  return hex(await mth(leaves));
+}
+function shortRoot(r) { return r ? (r.slice(0, 8) + '…' + r.slice(-8)) : ''; }
+function dayOf(iso) {
+  try { const t = new Date(iso); if (isNaN(t)) return iso; return t.toISOString().slice(0, 10); } catch (e) { return iso; }
+}
+(async function renderAnchorPanel() {
+  const el = document.getElementById('anchor-detail');
+  if (!el) return;
+  let latest = null;
+  try {
+    const res = await fetch('anchors/latest.json', { cache: 'no-store' });
+    if (res.ok) latest = await res.json();
+  } catch (e) { /* static panel stays */ }
+  if (!latest || !Array.isArray(latest.history) || !latest.history.length) return;
+  // Same validity bar as verify.js: truthiness is not validation — rows must be
+  // a positive safe integer and the root a 64-hex digest before any claim uses them.
+  const validAnchor = (a) => !!a && Number.isSafeInteger(a.rows) && a.rows > 0 &&
+    typeof a.merkle_root === 'string' && /^[0-9a-f]{64}$/.test(a.merkle_root);
+  const conf = validAnchor(latest.latest_confirmed) ? latest.latest_confirmed : null;
+  const pend = latest.pending_anchor;
+  let html = '';
+  if (conf) {
+    html += 'The chain Merkle root over the first <b>' + conf.rows + '</b> decisions (<code>'
+      + shortRoot(conf.merkle_root) + '</code>) is committed to Bitcoin. Latest confirmed attestation: <b>block '
+      + conf.confirmed_block + '</b> (' + dayOf(conf.block_time_utc) + ')'
+      + (Array.isArray(conf.confirmed_sources) && conf.confirmed_sources.length
+        ? ', corroborated by ' + conf.confirmed_sources.length + ' independent block explorers' : '') + '. ';
+  }
+  if (pend) {
+    html += 'A newer root over the first <b>' + pend.rows + '</b> decisions (<code>'
+      + shortRoot(pend.merkle_root) + '</code>) is stamped (' + dayOf(pend.stamped_utc)
+      + ') and awaiting its Bitcoin attestation — it confirms automatically, within hours. ';
+  } else if (conf && latest.anchored_rows > conf.rows) {
+    html += 'Entries beyond ' + conf.rows + ' await the next batch. ';
+  }
+  html += 'Verify the attestation node-free — no trust in this page required — with <code>ots verify &lt;manifest&gt;.json.ots</code>: '
+    + (pend ? '<a class="repo" href="' + pend.proof + '">pending proof</a> · ' : '')
+    + (conf ? '<a class="repo" href="' + conf.proof + '">confirmed proof</a> · ' : '')
+    + '<a class="repo" href="verify-anchors.js">verify-anchors.js</a> recomputes every root from the public chain.';
+  // Exogenous in-browser check: recompute the latest confirmed root from the
+  // raw chain lines THIS page loaded — no network, no manifest, no trust.
+  const raw = await chainRawLines(10000);
+  if (conf && raw && raw.length >= conf.rows) {
+    try {
+      const recomputed = await rfc6962RootHex(raw.slice(0, conf.rows));
+      const ok = recomputed === conf.merkle_root;
+      html += ' <b style="color:' + (ok ? 'var(--ok)' : 'var(--bad)') + '">'
+        + (ok ? '✓ root recomputed in YOUR browser — matches'
+              : '✗ browser recompute MISMATCH (' + shortRoot(recomputed) + ')') + '</b>';
+      // The headline verdict only claims cryptography once cryptography ran:
+      // upgrade on a match (never masking a broken chain), go red on mismatch.
+      const verdict = document.getElementById('verdict');
+      const total = (window.GRIP_CHAIN && window.GRIP_CHAIN.length) || raw.length;
+      if (ok && verdict && verdict.classList.contains('ok')) {
+        verdict.innerHTML = '<span class="badge">✓ ROOT MATCHES PUBLISHED ANCHOR</span>' +
+          '<span class="detail">first ' + conf.rows + ' decisions recompute in your browser to the published anchor root — the manifest attests Bitcoin block ' + conf.confirmed_block + '; confirm the attestation itself with ots verify' +
+          (total > conf.rows ? ' · ' + (total - conf.rows) + ' newer entries link‑checked, awaiting the next anchor batch' : '') + '</span>';
+      } else if (!ok && verdict) {
+        verdict.className = 'verdict bad';
+        verdict.innerHTML = '<span class="badge">✗ ANCHOR MISMATCH</span>' +
+          '<span class="detail">rows 1..' + conf.rows + ' recompute in your browser to ' + shortRoot(recomputed) + ' — not the published anchor root ' + shortRoot(conf.merkle_root) + '</span>';
+      }
+    } catch (e) { /* recompute unavailable — panel text still stands */ }
+  }
+  el.innerHTML = html;
+})();
+</script>
+</body>
+</html>

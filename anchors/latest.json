@@ -1,15 +1,26 @@
 {
   "anchored_rows": 3996,
-  "generated_at": "2026-11-24T16:18:54Z",
+  "generated_at": "2026-11-24T17:23:05Z",
   "history": [
     {
+      "bitcoin_blocks": [
+        977388
+      ],
+      "block_hash": "00000000000000000000c13b5f29ceff5132f7b2b9edeffba0bcad0676683ed4",
+      "block_time_utc": "2026-11-24T16:29:38Z",
+      "confirmed_at_utc": "2026-11-24T17:23:05Z",
+      "confirmed_block": 977388,
+      "confirmed_sources": [
+        "blockstream.info",
+        "mempool.space"
+      ],
       "manifest": "anchors/anchor-manifest-3996.json",
       "merkle_root": "6b2b6692ea60b24f6b7da46a7a40314500f61d299a815c428d7b4d1ffd5d6014",
       "prev_rows": 3843,
       "proof": "anchors/anchor-manifest-3996.json.ots",
       "rows": 3996,
       "stamped_utc": "2026-11-24T16:18:54Z",
-      "status": "pending"
+      "status": "confirmed"
     },
     {
       "bitcoin_blocks": [
@@ -579,33 +590,25 @@
   ],
   "latest_confirmed": {
     "bitcoin_blocks": [
-      975093
+      977388
     ],
-    "block_hash": "00000000000000000000cd4b0ec60a001c6ea85c4680ce040485c9d4d9866bdc",
-    "block_time_utc": "2026-11-08T19:51:49Z",
-    "confirmed_at_utc": "2026-11-08T21:11:53Z",
-    "confirmed_block": 975093,
+    "block_hash": "00000000000000000000c13b5f29ceff5132f7b2b9edeffba0bcad0676683ed4",
+    "block_time_utc": "2026-11-24T16:29:38Z",
+    "confirmed_at_utc": "2026-11-24T17:23:05Z",
+    "confirmed_block": 977388,
     "confirmed_sources": [
       "blockstream.info",
       "mempool.space"
     ],
-    "manifest": "anchors/anchor-manifest-3843.json",
-    "merkle_root": "dad823870ddbee3481c3d3b37cac312ff159d9756051c37f590cf5828140cc09",
-    "prev_rows": 3818,
-    "proof": "anchors/anchor-manifest-3843.json.ots",
-    "rows": 3843,
-    "stamped_utc": "2026-11-08T19:16:10Z",
-    "status": "confirmed"
-  },
-  "pending_anchor": {
     "manifest": "anchors/anchor-manifest-3996.json",
     "merkle_root": "6b2b6692ea60b24f6b7da46a7a40314500f61d299a815c428d7b4d1ffd5d6014",
     "prev_rows": 3843,
     "proof": "anchors/anchor-manifest-3996.json.ots",
     "rows": 3996,
     "stamped_utc": "2026-11-24T16:18:54Z",
-    "status": "pending"
+    "status": "confirmed"
   },
+  "pending_anchor": null,
   "schema": "grip-decision-chain-anchor-state/1",
   "total_rows": 3996
 }
